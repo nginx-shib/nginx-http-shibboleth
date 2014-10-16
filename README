@@ -1,0 +1,93 @@
+Shibboleth auth request module for nginx
+========================================
+
+This module allows authorization based on the result of a subrequest to Shibboleth.
+Once a subrequest returns 2xx status - access is allowed; on 401 or 403 - 
+access is disabled with an appropriate status.  
+
+For 401 statuses, the WWW-Authenticate header from the subrequest response 
+will be passed to client.
+
+All other subrequest response statuses are considered to be an error, unless
+the `shib_authorizer=on` flag is supplied, in which case the module will
+return the subrequest's response status and headers. This mostly follows
+the FastCGI Authorizer specification, with the exception of the processing
+of the request and response bodies. Further information follows below.
+
+The module works at access phase and therefore may be combined nicely with other
+access modules (access, auth_basic) via satisfy directive.
+
+
+Configuration directives
+========================
+
+    shib_request <uri>|off [flags]
+
+        Context: http, server, location
+        Default: off
+
+        Switches Shibboleth auth request module on and sets uri which will be 
+        asked for authorization.
+
+        Flags may be configured to modify the behaviour of the module as
+        follows:
+        
+         * shib_authorizer=on - Configures the auth request module to explicitly
+           return the status, headers, and content of the response resulting
+           from the sub-request to the configured uri.
+ 
+           This option allows a uri to conform to the FastCGI Authorizer
+           specification; see http://www.fastcgi.com/drupal/node/22#S6.3.
+           The one (potentially significant) caveat is that due to the way
+           Nginx operates at present with regards to subrequests (what
+           an Authorizer effectively requires), the request body will *not* be
+           forwarded to the authorizer, and similarly, the response body from
+           the authorizer will *not* be returned to the client. 
+
+           Configured URIs are not restricted to using a FastCGI backend
+           to generate a response, however.  This may be useful during
+           testing or otherwise, as you can use Nginx's built in ``return``
+           and ``rewrite`` directives to produce a suitable response.
+
+    shib_request_set <variable> <value>
+
+        Context: http, server, location
+        Default: none
+
+        Set request variable to the given value after auth request completion.
+        Value may contain variables from auth request, e.g. $upstream_http_*.
+
+
+Usage
+=====
+
+    # FastCGI authorizer for Shibboleth Auth Request module
+    location = /shibauthorizer {
+        internal;
+        include fastcgi_params;
+        fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
+    }
+
+
+    # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
+    # Watch out for performance issues and spoofing.
+    location /secure {
+        more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
+        
+        # Add your attributes here. They get introduced as headers
+        # by the FastCGI authorizer so we must prevent spoofing.
+        more_clear_input_headers 'displayName' 'mail' 'persistent-id';
+        
+        shib_request /shibauthorizer shib_authorizer=on;
+        proxy_pass http://localhost:8080;
+    }
+
+
+Misc
+====
+
+To compile nginx with this module, use "--add-module <path>" option
+to nginx configure.
+
+For further information on why this is a dedicated module, see
+http://forum.nginx.org/read.php?2,238523,238523#msg-238523
