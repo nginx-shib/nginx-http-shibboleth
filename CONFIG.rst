@@ -14,6 +14,8 @@ Steps
 #. Configure Nginx to talk to both FastCGI authorizer and responder.
 #. Configure your Nginx application ``location`` block with ``shib_request
    on``.
+#. Configure Shibboleth's ``shibboleth2.xml`` so the authorizer and responder are
+   aware of which paths to protect.
 #. Ensure your application code accepts the relevant incoming headers for
    authN/authZ.
 
@@ -104,122 +106,130 @@ Note that you'll almost certainly have other options being passed to
 existing packages for your distribution, and patch the above ``configure``
 argument into the build processes.
 
+Also, you will likely need the Nginx module `nginx_headers_more
+<http://wiki.nginx.org/HttpHeadersMoreModule>`_ in order to prevent header
+spoofing from the client, unless you already have a separate solution in
+place.
+
+If you wish to confirm the build was successful, install a version of Nginx
+with debugging support, configure full trace logging, and the example
+configuration below.  You should notice ``shib request ...`` lines in the
+output showing where ``nginx-http-shibboleth`` is up to during a request.
+
 
 Configure Nginx
 ---------------
 
+Nginx now needs to be configured with ``location`` blocks that point to both
+the FastCGI authorizer and responder.  Specify your FastCGI socket locations,
+where required. Note that the ``more_clear_input_headers`` directive is
+required to prevent header spoofing from the client, since the Shibboleth
+variables are passed around as headers.
 
-#. Configure one or more servers within your Nginx configuration like so.
-   You'll need the socket information for your FastCGI Shibboleth SP
-   applications.
+.. code:: nginx
 
-   The ``proxy_pass http://localhost:8080`` can be replaced
-   with whatever application or configuration should be receiving the
-   Shibboleth attributes as headers.  In my case, port 8080 is running Plone,
-   a Python-based CMS, but you might anything (PHP, FastCGI, etc) here.
-   Essentially, this is what would normally be the backend configured against
-   ``AuthType shibboleth`` in Apache.
+   server {
+       listen 443 ssl;
+       server_name example.org;
+       ...
 
-   .. code:: nginx
+       #FastCGI authorizer for Auth Request module
+       location = /shibauthorizer {
+           internal;
+           include fastcgi_params;
+           fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
+       }
 
-      server {
-          listen 443 ssl;
-          ...
+       #FastCGI responder
+       location /Shibboleth.sso {
+           include fastcgi_params;
+           fastcgi_pass unix:/opt/shibboleth/shibresponder.sock;
+       }
 
-          #FastCGI authorizer for Auth Request module
-          location = /shibauthorizer {
-              internal;
-              include fastcgi_params;
-              fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
-          }
+       #Resources for the Shibboleth error pages. This can be customised.
+       location /shibboleth-sp {
+           alias /usr/share/shibboleth/;
+       }
 
-          #FastCGI responder for SSO
-          location /Shibboleth.sso {
-              include fastcgi_params;
-              fastcgi_pass unix:/opt/shibboleth/shibresponder.sock;
-          }
+       #A secured location.  Here all incoming requests query the
+       #FastCGI authorizer.  Watch out for performance issues and spoofing.
+       location /secure {
+            more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
 
-          #Resources for the Shibboleth error pages. This can be customised.
-          location /shibboleth-sp {
-              alias /usr/share/shibboleth/;
-          }
+            #Add your attributes here. They get introduced as headers
+            #by the FastCGI authorizer so we must prevent spoofing.
+            more_clear_input_headers 'displayName' 'mail' 'persistent-id';
+            shib_request /shibauthorizer;
+            proxy_pass http://localhost:8080; 
+        }
 
-          #A secured location.  Here all incoming requests query the
-          #FastCGI authorizer.  Watch out for performance issues and spoofing.
-          location /secure {
-              more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
+        #A secured location, but only a specific sub-path causes Shibboleth
+        #authentication.
+        location /secure2 {
+            proxy_pass http://localhost:8080; 
 
-              #Add your attributes here. They get introduced as headers
-              #by the FastCGI authorizer so we must prevent spoofing.
-              more_clear_input_headers 'displayName' 'mail' 'persistent-id';
-              auth_request /shibauthorizer authorizer=on;
-              proxy_pass http://localhost:8080; 
-          }
+            location = /secure2/shibboleth {
+                more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
+                #Add your attributes here. They get introduced as headers
+                #by the FastCGI authorizer so we must prevent spoofing.
+                more_clear_input_headers 'displayName' 'mail' 'persistent-id';
+                shib_request /shibauthorizer;
+                proxy_pass http://localhost:8080;
+            }
+        }
+   }
 
-          #A secured location, but only a specific sub-path causes Shibboleth
-          #authentication.
-          location /secure2 {
-              proxy_pass http://localhost:8080; 
+Notes
+~~~~~
 
-              location = /secure2/shibboleth {
-                  more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
-                  #Add your attributes here. They get introduced as headers
-                  #by the FastCGI authorizer so we must prevent spoofing.
-                  more_clear_input_headers 'displayName' 'mail' 'persistent-id';
-                  auth_request /shibauthorizer authorizer=on;
-                  proxy_pass http://localhost:8080; 
-              }
-          }
-      }
+* ``proxy_pass`` can be replaced with any application or configuration that
+  should receive the Shibboleth attributes as headers.  Essentially, this is
+  what would normally be the backend configured against ``AuthType
+  shibboleth`` in Apache.
 
-   An explanation about the above is provided in the comments.  I should note
-   that:
+* The first 3 locations are pure boilerplate for any host that requires
+  Shibboleth authentication, so you may wish to template these for reuse
+  between hosts.
 
-   * The first 3 locations are pure boilerplate for any host that requires
-     Shibboleth authentication, so you can (and should!) put these into an
-     ``include``-able configuration file and reuse them.
+* The ``/shibboleth-sp`` location provides web resources for default
+  Shibboleth error messages. If you customise error pages, or don't care for
+  images or styles on error pages, delete this location.
 
-   * The ``/shibboleth-sp`` location is purely there to help your default
-     install.  If you customise your error pages, feel free to change or delete
-     this location.
+* Take note of the ``more_clear_input_headers`` calls. As the Shibboleth
+  authorizer will inject headers into the request before passing the
+  request onto the final upstream endpoint, you **must**
+  use these directives to protect from spoofing.  You should expand the 
+  second call to this directive when you have more incoming attributes 
+  from the Shibboleth authorizer.  Or else beware...
 
-   * Take note of the ``more_clear_input_headers`` calls. As the Shibboleth
-     authorizer will inject headers into the request before passing the
-     request onto the final upstream endpoint, you **must**
-     use these directives to protect from spoofing.  You should expand the 
-     second call to this directive when you have more incoming attributes 
-     from the Shibboleth authorizer.  Or else beware...
+* The ``/secure`` location will ask the FastCGI authorizer for attributes for
+  **every** request that comes in. This may or may not be desirable.  Keep in
+  mind this means that each request will have Shibboleth attributes add before
+  being sent onto a backend, and this will happen every time.
 
-   * The ``/secure`` location will ask the FastCGI authorizer for attributes
-     for **every** request that comes in. This may or may not be what you
-     want.  Keep in mind this means that each request will have Shibboleth
-     attributes dropped into the request for sending onto backend services,
-     and this will happen every time.  Did I mention for **every request**?
+*  You may wish to consider only securing a path that creates an application
+   session (such as the ``/secure2`` location block), and letting your
+   application handle the rest.  Only upon the user hitting this specific URL
+   will the authentication process be triggered. This is a authentication
+   technique to avoid extra overhead -- set the upstream for the specific
+   sub-path to be somewhere an application session is created, and have that
+   application session capture the Shibboleth attributes.
 
-   * The ``/secure2`` location only asks the FastCGI authorizer for auth
-     on a (very) specific sub-path.  Only upon the user hitting this specific
-     URL will the authentication process be triggered. This is a smarter
-     authentication technique to avoid extra overhead -- set the upstream
-     for the specific sub-path to be somewhere an application session is
-     created, and have that application session capture the Shibboleth
-     attributes.
+   Notice how the rest of the application doesn't refer to the authorizer.
+   This means the application can be used anonymously, too. Alternatively,
+   you can configure the ``requireSession`` option to be fa
 
-     Notice how the rest of the application doesn't refer to the authorizer.
-     This means the application can be used anonymously, too. Alternatively,
-     you can configure the ``requireSession`` option to be fa
-
-   * Adding the ``auth_request`` line into a location isn't all you need to
-     do to get the FastCGI authorizer to recognise your path as Shibboleth
-     protected.  You need to follow the instructions below and take care.
-
-#. Save the configuration and follow the next section.  You're almost done.
+* Adding the ``shib_request`` line into a location isn't all you need to
+  do to get the FastCGI authorizer to recognise your path as Shibboleth
+  protected.  You need also need to ensure that ``shibd`` is configured to
+  accept your paths as well, following the next set of instructions.
 
 
-Configuring Shibboleth to recognise secured paths
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Configuring Shibboleth's shibboleth2.xml to recognise secured paths
+-------------------------------------------------------------------
 
-Typically, within Apache, you can tell Shibboleth which paths to secure by
-using something like:
+Within Apache, you can tell Shibboleth which paths to secure by
+using configuration like:
 
 .. code:: apache
 
@@ -228,80 +238,55 @@ using something like:
        ShibRequestSetting requireSession false
    </Location>
 
-However, the FastCGI authorizer for Shibboleth operates without such directives
-and thus path protection needs to be configured like it would be for IIS,
-using the ``<RequestMapper>`` configuration.  The same options are accepted
-within this section of the ``shibboleth2.xml`` configuration file, it's just
-that you need to know where to put them.  So let's do that.
+Shibboleth is made aware of this configuration automatically.
 
-  
-#. Configure your ``shibboleth2.xml`` file like so.  Find the ``RequestMapper``
-   element and replace it with something like the following:
+However, the FastCGI authorizer for Shibboleth operates without such
+directives and thus path protection needs to be configured like it would be
+for IIS, using the ``<RequestMapper>`` configuration.  The same options from
+Apache are accepted within the ``RequestMapper`` section of the
+``shibboleth2.xml`` configuration file, like this truncated example shows.
+This example corresponds to the sample Nginx configuration given above.
 
-   .. code:: xml
+.. code:: xml
 
-       <RequestMapper type="XML">
-           <RequestMap>
-               <Host name="eresearch.jcu.edu.au"
-                     authType="shibboleth"
-                     requireSession="true"
-                     redirectToSSL="443">
-                   <Path name="/secure" />
-                   <Path name="/secure2/shibboleth" />
-                   ...
-               </Host>
-               ...
-           </RequestMap>
-       </RequestMapper>
+    <RequestMapper type="XML">
+        <RequestMap>
+            <Host name="example.org"
+                    authType="shibboleth"
+                    requireSession="true"
+                    redirectToSSL="443">
+                <Path name="/secure" />
+                <Path name="/secure2/shibboleth" />
+                ...
+            </Host>
+            ...
+        </RequestMap>
+    </RequestMapper>
 
-   Some notes:
+Notes
+~~~~~
 
-   * The Shibboleth FastCGI authorizer needs to see ``authType`` **and**
-     ``requireSession`` configured for the resultant path.  If they are not
-     present, then the authorizer will ignore the path it is passed and
-     the user will not be prompted for authentication (and you **will**
-     tear your hair out because no logging takes place!).
+* The Shibboleth FastCGI authorizer must have both ``authType`` **and**
+  ``requireSession`` configured for the resultant path.  If they are not
+  present, then the authorizer will ignore the path it is passed and the user
+  will not be prompted for authentication (and no logging will take place).
 
-   * ``<Path>`` names are **case sensitive** here.  You have hereby been warned!
-     -- although this shouldn't be too surprising to you hopefully.
+* ``<Path>`` names are **case sensitive**.
 
-   * You can use other configuration items like ``<HostRegex>`` and
-     ``<PathRegex>`` and ``<AccessControl``> to configure what happens to 
-     requests.  Check out the documentation below - there's lots to learn. 
+* You can use other configuration items like ``<HostRegex>`` and
+  ``<PathRegex>`` and ``<AccessControl``> to configure how Shibboleth handles
+  incoming requests.
 
-   * An interesting aspect here is that configuration is inherited downwards
-     in the XML tree.  So, you could configure something like the ``authType``
-     on a ``<Host>`` and have it apply to all paths beneath it.
+* Configuration is inherited **downwards** in the XML tree.  So, configure ``authType``
+  on a ``<Host>`` element will see it apply to all paths beneath it.  This is
+  not required, however; attributes can be placed anywhere you desire.
 
-     You don't need to do this, though.  You may put all the configuration
-     attributes onto the ``<Path>`` element, or even move them up to
-     higher levels in the tree if you want to reduce duplication.
+* Nested ``<Path>`` elements are greedy. Putting a path with
+  ``name="shibboleth"`` within a path with ``name="secure"`` really translates
+  to a path with ``name="secure/shibboleth"``.
 
-   * Nested ``<Path>`` elements will see their path segments being greedy.
-     So putting a path with ``name="shibboleth"`` within a path with
-     ``name="secure"`` really translates to a path with 
-     ``name="secure/shibboleth"``.  Whatever takes your fancy here.
-
-#. Once you're done, then restart the Shibboleth daemon, ensure that you
-   restart the Shibboleth FastCGI applications, and hard restart Nginx
-   just to make sure it finds those sockets::
-
-       service shibd restart
-       supervisorctl restart shibauthorizer shibresponder
-       service nginx restart
-
-   Assuming, of course, that you're using Supervisor to run your applications.
-   You should.  It's easy to work with and fun.  
-
-#. Try loading up your Shibboleth protected URL.  If all goes well, then you
-   should get a complete authentication cycle.  If not, check carefully through
-   everything above.
-
-Take a look at 
-https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapper
-and
-https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMap
-for more information.
+* Upon changing this configuration, ensure the ``shibauthorizer`` and
+  ``shibresponder`` applications are hard-restarted, as well as ``shibd``.
 
 Gotchas
 -------
@@ -323,9 +308,22 @@ to be invoked, check the following:
   in Nginx is probably wrong and the authorizer isn't being contacted.
 
 * When in doubt, hard restart the entire stack, and use something like ``curl``
-  to ensure you avoid any browser caching.
+  to ensure you avoid any browser caching.  If still in doubt that the Nginx
+  installation has been successfully built with the ``nginx-http-shibboleth``
+  module, run Nginx in debug mode, and trace the request accordingly.
 
-* When in serious doubt, install a version of Nginx with debugging support,
-  configure full trace logging, and run it with your configuration instead.
-  If 
 
+Resources
+---------
+
+* http://wiki.nginx.org/HttpHeadersMoreModule
+* https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapper
+* https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMap
+* https://github.com/nginx-shib/nginx-http-shibboleth
+* http://davidjb.com/blog/2013/04/setting-up-a-shibboleth-sp-with-fastcgi-support/
+* https://github.com/jcu-eresearch/shibboleth-fastcgi/
+* https://github.com/jcu-eresearch/nginx-custom-build
+
+Deprecated documentation:
+
+* http://davidjb.com/blog/2013/04/integrating-nginx-and-a-shibboleth-sp-with-fastcgi/
