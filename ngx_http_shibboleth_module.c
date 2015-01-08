@@ -21,7 +21,6 @@
 
 typedef struct {
     ngx_str_t                 uri;
-    ngx_uint_t                authorizer;
     ngx_array_t              *vars;
 } ngx_http_auth_request_conf_t;
 
@@ -60,7 +59,7 @@ static char *ngx_http_auth_request_set(ngx_conf_t *cf, ngx_command_t *cmd,
 static ngx_command_t  ngx_http_auth_request_commands[] = {
 
     { ngx_string("shib_request"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_http_auth_request,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
@@ -113,7 +112,7 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
 {
     ngx_uint_t                    i;
     ngx_list_part_t               *part;
-    ngx_table_elt_t               *h, *ho, *hi;
+    ngx_table_elt_t               *h, *hi;
     ngx_http_request_t            *sr;
     ngx_http_post_subrequest_t    *ps;
     ngx_http_auth_request_ctx_t   *ctx;
@@ -145,121 +144,79 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         }
 
         /*
-         * if authorizer mode is configured, handle the subrequest
+         * Handle the subrequest
          * as per the FastCGI authorizer specification.
          */ 
-        if (arcf->authorizer) {
-            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "shib request authorizer handler");
-            sr = ctx->subrequest;
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "shib request authorizer handler");
+        sr = ctx->subrequest;
 
-            if (ctx->status == NGX_HTTP_OK) {
-                /* 
-                 * 200 response may include headers prefixed with `Variable-`
-                 * back into initial headers
-                 */
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "shib request authorizer allows access");
-
-                part = &sr->headers_out.headers.part;
-                h = part->elts;
-
-                for (i = 0; /* void */; i++) {
-
-                    if (i >= part->nelts) {
-                        if (part->next == NULL) {
-                            break;
-                        }
-
-                        part = part->next;
-                        h = part->elts;
-                        i = 0;
-                    }
-
-                    if (h[i].hash == 0) {
-                        continue;
-                    }
-
-                    if (ngx_strncasecmp(h[i].key.data,
-                        (u_char *) "Variable-", 9) == 0) {
-                        /* copy header into original request */
-                        hi = ngx_list_push(&r->headers_in.headers);
-
-                        if (hi == NULL) {
-                            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-                        }
-
-                        /* Strip the Variable- prefix */
-                        hi->key.len = h[i].key.len - 9;
-                        hi->key.data = h[i].key.data + 9;
-                        hi->value = h[i].value;
-
-                        hi->lowcase_key = ngx_pnalloc(r->pool, hi->key.len);
-                        if (hi->lowcase_key == NULL) {
-                            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-                        }
-                        ngx_strlow(hi->lowcase_key, hi->key.data, hi->key.len);
-
-                        ngx_log_debug2(
-                          NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                          "shib request authorizer copied header: \"%V: %V\"",
-                          &hi->key, &hi->value);
-                    }
-                }
-                
-                return NGX_OK;
-            }
-
+        if (ctx->status == NGX_HTTP_OK) {
             /* 
-             * Unconditionally return subrequest response status, headers 
-             * and content.
+             * 200 response may include headers prefixed with `Variable-`
+             * back into initial headers
              */
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "shib request authorizer returning sub-response");
+                       "shib request authorizer allows access");
 
-            r->headers_out = sr->headers_out;
-            return ctx->status;
-        }
+            part = &sr->headers_out.headers.part;
+            h = part->elts;
 
-        /* return appropriate status */
+            for (i = 0; /* void */; i++) {
 
-        if (ctx->status == NGX_HTTP_FORBIDDEN) {
-            return ctx->status;
-        }
+                if (i >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
 
-        if (ctx->status == NGX_HTTP_UNAUTHORIZED) {
-            sr = ctx->subrequest;
-
-            h = sr->headers_out.www_authenticate;
-
-            if (!h && sr->upstream) {
-                h = sr->upstream->headers_in.www_authenticate;
-            }
-
-            if (h) {
-                ho = ngx_list_push(&r->headers_out.headers);
-                if (ho == NULL) {
-                    return NGX_ERROR;
+                    part = part->next;
+                    h = part->elts;
+                    i = 0;
                 }
 
-                *ho = *h;
+                if (h[i].hash == 0) {
+                    continue;
+                }
 
-                r->headers_out.www_authenticate = ho;
+                if (ngx_strncasecmp(h[i].key.data,
+                    (u_char *) "Variable-", 9) == 0) {
+                    /* copy header into original request */
+                    hi = ngx_list_push(&r->headers_in.headers);
+
+                    if (hi == NULL) {
+                        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                    }
+
+                    /* Strip the Variable- prefix */
+                    hi->key.len = h[i].key.len - 9;
+                    hi->key.data = h[i].key.data + 9;
+                    hi->value = h[i].value;
+
+                    hi->lowcase_key = ngx_pnalloc(r->pool, hi->key.len);
+                    if (hi->lowcase_key == NULL) {
+                        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    ngx_strlow(hi->lowcase_key, hi->key.data, hi->key.len);
+
+                    ngx_log_debug2(
+                      NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                      "shib request authorizer copied header: \"%V: %V\"",
+                      &hi->key, &hi->value);
+                }
             }
-
-            return ctx->status;
-        }
-
-        if (ctx->status >= NGX_HTTP_OK
-            && ctx->status < NGX_HTTP_SPECIAL_RESPONSE)
-        {
+            
             return NGX_OK;
         }
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "shib request unexpected status: %d", ctx->status);
+        /*
+         * Unconditionally return subrequest response status, headers
+         * and content.
+         */
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "shib request authorizer returning sub-response");
 
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        r->headers_out = sr->headers_out;
+        return ctx->status;
     }
 
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_auth_request_ctx_t));
@@ -293,8 +250,8 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
     }
 
     /* 
-     * true FastCGI authorizers should conditionally return the subrequest 
-     * response body but the FastCGI handler does not support
+     * true FastCGI authorizers should always return the subrequest 
+     * response body but the Nginx FastCGI handler does not support
      * NGX_HTTP_SUBREQUEST_IN_MEMORY at present.
      */
     sr->header_only = 1;
@@ -452,8 +409,7 @@ ngx_http_auth_request(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_auth_request_conf_t *arcf = conf;
 
-    ngx_uint_t       i;
-    ngx_str_t        *value, s;
+    ngx_str_t        *value;
 
     if (arcf->uri.data != NULL) {
         return "is duplicate";
@@ -469,18 +425,6 @@ ngx_http_auth_request(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     arcf->uri = value[1];
-
-    for (i = 2; i < cf->args->nelts; i++) {
-
-        if (ngx_strncmp(value[i].data, "shib_authorizer=", 16) == 0) {
-            s.len = value[i].len - 16;
-            s.data = value[i].data + 16;
-            if (ngx_strcmp(s.data, "on") == 0) {
-                arcf->authorizer = 1;
-            }
-        }
-    }
-
 
     return NGX_CONF_OK;
 }
