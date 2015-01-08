@@ -1,24 +1,32 @@
 Shibboleth auth request module for nginx
 ========================================
 
-This module allows authorization based on the result of a subrequest to Shibboleth.
-Once a subrequest returns 2xx status - access is allowed; on 401 or 403 - 
-access is disabled with an appropriate status.  
+This module allows authorization based on the result of a subrequest to
+Shibboleth.  Once a subrequest returns 2xx status - access is allowed; on 401
+or 403 - access is disabled with an appropriate status.
 
-For 40x statuses, the WWW-Authenticate header from the subrequest response 
-will be passed to client.  All other subrequest response statuses (such as 
-3xx redirects) are passed back to the client, including status and headers. 
-This mostly conforms to the FastCGI Authorizer specification, with the exception 
-of the processing of the sub-request and sub-response bodies due to limitations
-in Nginx. As the Shibboleth FastCGI authorizer does not consider the contents of
-a request body or use response bodies, this is not an issue.
+For 40x statuses, the WWW-Authenticate header from the subrequest response
+will be passed to client.  All other subrequest response statuses (such as 3xx
+redirects) are passed back to the client, including status and headers.  This
+mostly conforms to the FastCGI Authorizer specification, with the exception of
+the processing of the sub-request and sub-response bodies due to limitations
+in Nginx. As the Shibboleth FastCGI authorizer does not consider the contents
+of a request body or use response bodies, this is not an issue.
 
-The module works at access phase and therefore may be combined nicely with other
-access modules (access, auth_basic) via satisfy directive.
+The module works at access phase and therefore may be combined nicely with
+other access modules (access, auth_basic) via satisfy directive.
 
 
 Configuration directives
 ========================
+
+.. warning::
+
+   The ``shib_request`` directive no longer requires the ``shib_authorizer``
+   flag.  This must be removed for Nginx to start. No other changes are
+   required.
+
+::
 
     shib_request <uri>|off
 
@@ -58,6 +66,8 @@ Configuration directives
 Usage
 =====
 
+::
+
     # FastCGI authorizer for Shibboleth Auth Request module
     location = /shibauthorizer {
         internal;
@@ -65,16 +75,15 @@ Usage
         fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
     }
 
-
     # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
     # Watch out for performance issues and spoofing.
     location /secure {
         more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
-        
+
         # Add your attributes here. They get introduced as headers
         # by the FastCGI authorizer so we must prevent spoofing.
         more_clear_input_headers 'displayName' 'mail' 'persistent-id';
-        
+
         shib_request /shibauthorizer;
         proxy_pass http://localhost:8080;
     }
@@ -83,8 +92,11 @@ Usage
 Misc
 ====
 
-To compile nginx with this module, use "--add-module <path>" option
-to nginx configure.
+To compile nginx with this module, use the::
+
+    --add-module <path>
+
+option when you ``configure`` nginx.
 
 For further information on why this is a dedicated module, see
 http://forum.nginx.org/read.php?2,238523,238523#msg-238523
