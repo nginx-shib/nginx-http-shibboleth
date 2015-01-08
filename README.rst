@@ -89,8 +89,8 @@ Usage
     }
 
 
-Misc
-====
+Installation
+============
 
 To compile nginx with this module, use the::
 
@@ -100,3 +100,11 @@ option when you ``configure`` nginx.
 
 For further information on why this is a dedicated module, see
 http://forum.nginx.org/read.php?2,238523,238523#msg-238523
+
+
+Configuration
+=============
+
+For full details about configuring the Nginx/Shibboleth environment,
+see
+https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
