@@ -35,7 +35,9 @@ cannot forward the original request body, and likewise, cannot pass a
 sub-request response back to the client.  As such, this module does not fully
 comply with the FastCGI authorizer specification. However, for Shibboleth,
 these two factors are inconsequential as only HTTP redirections and HTTP
-headers (cookies) are used for authentication to succeed.
+headers (cookies) are used for authentication to succeed and, only
+HTTP headers (attributes/variables) are required to be passed onto a backend
+application from the Shibboleth authorizer.
 
 
 Shibboleth SP with FastCGI Support
