@@ -310,9 +310,11 @@ to be invoked, check the following:
   in Nginx is probably wrong and the authorizer isn't being contacted.
 
 * When in doubt, hard restart the entire stack, and use something like ``curl``
-  to ensure you avoid any browser caching.  If still in doubt that the Nginx
-  installation has been successfully built with the ``nginx-http-shibboleth``
-  module, run Nginx in debug mode, and trace the request accordingly.
+  to ensure you avoid any browser caching.  
+  
+* If still in doubt that the Nginx installation has been successfully built
+  with the ``nginx-http-shibboleth`` module, run Nginx in debug mode,
+  and trace the request accordingly through the logs or console output.
 
 
 Resources
