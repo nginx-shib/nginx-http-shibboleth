@@ -63,10 +63,27 @@ Configuration directives
         Value may contain variables from auth request, e.g. $upstream_http_*.
 
 
-Usage
-=====
+Installation
+============
 
-::
+To compile nginx with this module, use the::
+
+    --add-module <path>
+
+option when you ``configure`` nginx.
+
+For further information on why this is a dedicated module, see
+http://forum.nginx.org/read.php?2,238523,238523#msg-238523
+
+
+Configuration
+=============
+
+For full details about configuring the Nginx/Shibboleth environment,
+see the documentation at
+https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
+
+A simple example consists of the following::
 
     # FastCGI authorizer for Shibboleth Auth Request module
     location = /shibauthorizer {
@@ -91,22 +108,3 @@ Usage
     }
 
 
-Installation
-============
-
-To compile nginx with this module, use the::
-
-    --add-module <path>
-
-option when you ``configure`` nginx.
-
-For further information on why this is a dedicated module, see
-http://forum.nginx.org/read.php?2,238523,238523#msg-238523
-
-
-Configuration
-=============
-
-For full details about configuring the Nginx/Shibboleth environment,
-see
-https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
