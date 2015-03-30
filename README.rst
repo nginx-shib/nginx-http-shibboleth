@@ -85,6 +85,8 @@ Usage
         more_clear_input_headers 'displayName' 'mail' 'persistent-id';
 
         shib_request /shibauthorizer;
+        # Backend application that will receive Shibboleth variables as request
+        # headers from the FastCGI authorizer
         proxy_pass http://localhost:8080;
     }
 
