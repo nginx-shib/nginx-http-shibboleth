@@ -190,6 +190,7 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
                     /* Strip the Variable- prefix */
                     hi->key.len = h[i].key.len - 9;
                     hi->key.data = h[i].key.data + 9;
+                    hi->hash = ngx_hash_key(hi->key.data, hi->key.len);
                     hi->value = h[i].value;
 
                     hi->lowcase_key = ngx_pnalloc(r->pool, hi->key.len);
