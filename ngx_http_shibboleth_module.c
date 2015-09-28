@@ -112,7 +112,7 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
 {
     ngx_uint_t                    i;
     ngx_list_part_t               *part;
-    ngx_table_elt_t               *h, *hi, *ho;
+    ngx_table_elt_t               *h, *hi;
     ngx_http_request_t            *sr;
     ngx_http_post_subrequest_t    *ps;
     ngx_http_auth_request_ctx_t   *ctx;
@@ -150,36 +150,6 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "shib request authorizer handler");
         sr = ctx->subrequest;
-
-        /* return appropriate status */
-
-        if (ctx->status == NGX_HTTP_FORBIDDEN) {
-            return ctx->status;
-        }
-
-        if (ctx->status == NGX_HTTP_UNAUTHORIZED) {
-            /* return www-authenticate headers to client */
-            sr = ctx->subrequest;
-
-            h = sr->headers_out.www_authenticate;
-
-            if (!h && sr->upstream) {
-                h = sr->upstream->headers_in.www_authenticate;
-            }
-
-            if (h) {
-                ho = ngx_list_push(&r->headers_out.headers);
-                if (ho == NULL) {
-                    return NGX_ERROR;
-                }
-
-                *ho = *h;
-
-                r->headers_out.www_authenticate = ho;
-            }
-
-            return ctx->status;
-        }
 
         if (ctx->status == NGX_HTTP_OK) {
             /* 
@@ -242,10 +212,6 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         /*
          * Unconditionally return subrequest response status, headers
          * and content.
-         *
-	 * TODO: returning headers in this way affects ability to be changed
-	 *       via config (eg via add_header, headers more etc)
-         * TODO: Nginx doesn't allow subrequest bodies to be proxied
          */
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "shib request authorizer returning sub-response");
