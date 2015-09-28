@@ -108,3 +108,9 @@ A simple example consists of the following::
     }
 
 
+Known issues
+============
+
+* Headers returned from an authorizer sub-response cannot be manipulated
+  correctly in Nginx location blocks.  A merge of subrequest response/main
+  response headers needs to be implemented. 
