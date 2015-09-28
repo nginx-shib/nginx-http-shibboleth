@@ -13,7 +13,8 @@ Steps
 #. Configure Shibboleth FastCGI authorizer and reponsder applicatons to run.
 #. Configure Nginx to talk to both FastCGI authorizer and responder.
 #. Configure your Nginx application ``location`` block with ``shib_request
-   on``.
+   /shibauthorizer``, where ``/shibauthorizer`` is the path to your Shibboleth
+   authorizer location inside Nginx.
 #. Configure Shibboleth's ``shibboleth2.xml`` so the authorizer and responder are
    aware of which paths to protect.
 #. Ensure your application code accepts the relevant incoming headers for
