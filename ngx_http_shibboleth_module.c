@@ -6,7 +6,7 @@
  * Copyright (C) Nginx, Inc.
 
  Forked Shibboleth dedicated module:
- * Copyright (C) 2013, David Beitey (davidjb)
+ * Copyright (C) 2013-2015, David Beitey (davidjb)
  * Copyright (C) 2014, Luca Bruno
 
  Distributed under 2-clause BSD license, see LICENSE file.
