@@ -107,4 +107,15 @@ A simple example consists of the following::
         proxy_pass http://localhost:8080;
     }
 
+Note that we use the `headers-more-nginx-module <https://github.com/openresty/headers-more-nginx-module>`_
+to clear potentially dangerous input headers.
 
+Gotchas
+-------
+
+* Subrequests, such as the Shibboleth auth request, aren't processed through header filters.
+  This means that built-in directives like ``add_header`` will **not** work if configured
+  as part of the a ``/shibauthorizer`` block.  If you need to manipulate subrequest headers,
+  use ``more_set_headers`` from the module ``headers-more``.
+  
+  See http://forum.nginx.org/read.php?29,257271,257272#msg-257272.
