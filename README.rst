@@ -119,3 +119,25 @@ Gotchas
   use ``more_set_headers`` from the module ``headers-more``.
   
   See http://forum.nginx.org/read.php?29,257271,257272#msg-257272.
+
+* Subrequest response bodies cannot be returned to the client as Nginx does not currently
+  support NGX_HTTP_SUBREQUEST_IN_MEMORY (whereby it would be buffered in memory and could
+  be returned to the client) for FastCGI.  As a result, the response body from the
+  Shibboleth authorizer are simply ignored.  Typically, this is worked around by having 
+  Nginx serve an error page instead; for instance::
+  
+      location /secure {
+         shib_request /shibauthorizer;
+         error_page 403 /shibboleth-forbidden.html;
+         ...
+      }
+      
+  would serve the given page if the Shibboleth authorizer denies the user access
+  to this location.  Without ``error_page`` specified, Nginx will serve its generic
+  error pages.
+  
+  Note that this does *not* apply to the Shibboleth responder (typically hosted at
+  ``Shibboleth.sso``) as it is a FastCGI responder and Nginx is fully compatible
+  with this as no subrequests are used.
+  
+  See http://forum.nginx.org/read.php?2,238444,238453.
