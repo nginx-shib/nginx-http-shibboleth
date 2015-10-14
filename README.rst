@@ -123,8 +123,8 @@ Gotchas
 * Subrequest response bodies cannot be returned to the client as Nginx does not currently
   support NGX_HTTP_SUBREQUEST_IN_MEMORY (whereby it would be buffered in memory and could
   be returned to the client) for FastCGI.  As a result, the response body from the
-  Shibboleth authorizer are simply ignored.  Typically, this is worked around by having 
-  Nginx serve an error page instead; for instance::
+  Shibboleth authorizer is simply ignored.  Typically, this is worked around by having 
+  Nginx serve an suitable page instead; for instance::
   
       location /secure {
          shib_request /shibauthorizer;
