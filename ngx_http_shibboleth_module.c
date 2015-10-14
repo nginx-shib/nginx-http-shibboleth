@@ -9,6 +9,10 @@
  * Copyright (C) 2013-2015, David Beitey (davidjb)
  * Copyright (C) 2014, Luca Bruno
 
+ Contains elements adapted from ngx_lua:
+ * Copyright (C) 2009-2015, by Xiaozhe Wang (chaoslawful) chaoslawful@gmail.com.
+ * Copyright (C) 2009-2015, by Yichun "agentzh" Zhang (章亦春) agentzh@gmail.com, CloudFlare Inc.
+
  Distributed under 2-clause BSD license, see LICENSE file.
 
  */
@@ -17,6 +21,28 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+
+
+typedef struct ngx_http_shib_request_header_val_s  ngx_http_shib_request_header_val_t;
+
+typedef ngx_int_t (*ngx_http_shib_request_set_header_pt)(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+
+
+typedef struct {
+    ngx_str_t                               name;
+    ngx_uint_t                              offset;
+    ngx_http_shib_request_set_header_pt     handler;
+} ngx_http_shib_request_set_header_t;
+
+
+struct ngx_http_shib_request_header_val_s {
+    ngx_http_complex_value_t                value;
+    ngx_uint_t                              hash;
+    ngx_str_t                               key;
+    ngx_http_shib_request_set_header_pt     handler;
+    ngx_uint_t                              offset;
+};
 
 
 typedef struct {
@@ -54,6 +80,92 @@ static char *ngx_http_auth_request(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_auth_request_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+
+/* Functions replicated from ngx_lua */
+static ngx_int_t ngx_http_set_output_header(ngx_http_request_t *r,
+    ngx_str_t key, ngx_str_t value);
+static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value,
+    ngx_table_elt_t **output_header, unsigned no_create);
+static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_clear_last_modified_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_location_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value);
+
+
+/* Content-centric headers are ignored from being set since subrequest
+ * response bodies aren't currently supported by Nginx.
+ */
+static ngx_http_shib_request_set_header_t  ngx_http_shib_request_set_handlers[] = {
+
+    { ngx_string("Server"),
+                 offsetof(ngx_http_headers_out_t, server),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Date"),
+                 offsetof(ngx_http_headers_out_t, date),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Content-Encoding"),
+                 offsetof(ngx_http_headers_out_t, content_encoding),
+                 NULL },
+
+    { ngx_string("Location"),
+                 offsetof(ngx_http_headers_out_t, location),
+                 ngx_http_set_location_header },
+
+    { ngx_string("Refresh"),
+                 offsetof(ngx_http_headers_out_t, refresh),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Last-Modified"),
+                 offsetof(ngx_http_headers_out_t, last_modified),
+                 ngx_http_set_last_modified_header },
+
+    { ngx_string("Content-Range"),
+                 offsetof(ngx_http_headers_out_t, content_range),
+                 NULL },
+
+    { ngx_string("Accept-Ranges"),
+                 offsetof(ngx_http_headers_out_t, accept_ranges),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("WWW-Authenticate"),
+                 offsetof(ngx_http_headers_out_t, www_authenticate),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Expires"),
+                 offsetof(ngx_http_headers_out_t, expires),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("ETag"),
+                 offsetof(ngx_http_headers_out_t, etag),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Content-Length"),
+                 offsetof(ngx_http_headers_out_t, content_length),
+                 NULL },
+
+    { ngx_string("Content-Type"),
+                 offsetof(ngx_http_headers_out_t, content_type),
+                 NULL },
+
+    { ngx_string("Cache-Control"),
+                 offsetof(ngx_http_headers_out_t, cache_control),
+                 ngx_http_set_builtin_multi_header },
+
+    { ngx_null_string, 0, ngx_http_set_header }
+};
 
 
 static ngx_command_t  ngx_http_auth_request_commands[] = {
@@ -111,6 +223,7 @@ static ngx_int_t
 ngx_http_auth_request_handler(ngx_http_request_t *r)
 {
     ngx_uint_t                    i;
+    ngx_int_t                     rc;
     ngx_list_part_t               *part;
     ngx_table_elt_t               *h, *hi;
     ngx_http_request_t            *sr;
@@ -211,12 +324,44 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
 
         /*
          * Unconditionally return subrequest response status, headers
-         * and content.
+         * and content as per FastCGI spec (section 6.3).
+         *
+         * The subrequest response body cannot be returned as Nginx does not
+         * currently support NGX_HTTP_SUBREQUEST_IN_MEMORY.
          */
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "shib request authorizer returning sub-response");
 
-        r->headers_out = sr->headers_out;
+        /* copy status */
+        r->headers_out.status = sr->headers_out.status;
+
+        /* copy headers */
+        part = &sr->headers_out.headers.part;
+        h = part->elts;
+
+        for (i = 0; /* void */; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                h = part->elts;
+                i = 0;
+            }
+
+            rc = ngx_http_set_output_header(r, h[i].key, h[i].value);
+            if (rc == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+
+            ngx_log_debug2(
+              NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+              "shib request authorizer returning header: \"%V: %V\"",
+              &h[i].key, &h[i].value);
+        }
+
         return ctx->status;
     }
 
@@ -493,4 +638,327 @@ ngx_http_auth_request_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     return NGX_CONF_OK;
+}
+
+
+/* Implementation adapted from ngx_lua/ngx_http_lua_headers_out.c.
+ *
+ * Primary difference is that header handling here ignores any headers
+ * that have no handler configured, whereas the original code returns
+ * an NGX_ERROR.
+ */
+
+static ngx_int_t
+ngx_http_set_header(ngx_http_request_t *r, ngx_http_shib_request_header_val_t *hv,
+    ngx_str_t *value)
+{
+    return ngx_http_set_header_helper(r, hv, value, NULL, 0);
+}
+
+
+static ngx_int_t
+ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_shib_request_header_val_t *hv,
+    ngx_str_t *value, ngx_table_elt_t **output_header,
+    unsigned no_create)
+{
+    ngx_table_elt_t             *h;
+    ngx_list_part_t             *part;
+    ngx_uint_t                   i;
+    unsigned                     matched = 0;
+
+#if 1
+    if (r->headers_out.location
+        && r->headers_out.location->value.len
+        && r->headers_out.location->value.data[0] == '/')
+    {
+        /* XXX ngx_http_core_find_config_phase, for example,
+         * may not initialize the "key" and "hash" fields
+         * for a nasty optimization purpose, and
+         * we have to work-around it here */
+
+        r->headers_out.location->hash = ngx_hash_key((u_char *) "location", 8);
+        ngx_str_set(&r->headers_out.location->key, "Location");
+    }
+#endif
+
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash != 0
+            && h[i].key.len == hv->key.len
+            && ngx_strncasecmp(hv->key.data, h[i].key.data, h[i].key.len) == 0)
+        {
+
+            if (value->len == 0 || matched) {
+
+                h[i].value.len = 0;
+                h[i].hash = 0;
+
+            } else {
+                h[i].value = *value;
+                h[i].hash = hv->hash;
+            }
+
+            if (output_header) {
+                *output_header = &h[i];
+            }
+
+            /* return NGX_OK; */
+            matched = 1;
+        }
+    }
+
+    if (matched) {
+        return NGX_OK;
+    }
+
+    if (no_create && value->len == 0) {
+        return NGX_OK;
+    }
+
+    /* XXX we still need to create header slot even if the value
+     * is empty because some builtin headers like Last-Modified
+     * relies on this to get cleared */
+
+    h = ngx_list_push(&r->headers_out.headers);
+
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (value->len == 0) {
+        h->hash = 0;
+
+    } else {
+        h->hash = hv->hash;
+    }
+
+    h->key = hv->key;
+    h->value = *value;
+
+    h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
+    if (h->lowcase_key == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
+
+    if (output_header) {
+        *output_header = h;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_set_location_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    ngx_int_t         rc;
+    ngx_table_elt_t  *h;
+
+    rc = ngx_http_set_builtin_header(r, hv, value);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    /*
+     * we do not set r->headers_out.location here to avoid the handling
+     * the local redirects without a host name by ngx_http_header_filter()
+     */
+
+    h = r->headers_out.location;
+    if (h && h->value.len && h->value.data[0] == '/') {
+        r->headers_out.location = NULL;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_set_builtin_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    ngx_table_elt_t  *h, **old;
+
+    if (hv->offset) {
+        old = (ngx_table_elt_t **) ((char *) &r->headers_out + hv->offset);
+
+    } else {
+        old = NULL;
+    }
+
+    if (old == NULL || *old == NULL) {
+        return ngx_http_set_header_helper(r, hv, value, old, 0);
+    }
+
+    h = *old;
+
+    if (value->len == 0) {
+        h->hash = 0;
+        h->value = *value;
+
+        return NGX_OK;
+    }
+
+    h->hash = hv->hash;
+    h->key = hv->key;
+    h->value = *value;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    ngx_array_t      *pa;
+    ngx_table_elt_t  *ho, **ph;
+    ngx_uint_t        i;
+
+    pa = (ngx_array_t *) ((char *) &r->headers_out + hv->offset);
+
+    if (pa->elts == NULL) {
+        if (ngx_array_init(pa, r->pool, 2, sizeof(ngx_table_elt_t *))
+            != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+    }
+
+    /* override old values (if any) */
+
+    if (pa->nelts > 0) {
+        ph = pa->elts;
+        for (i = 1; i < pa->nelts; i++) {
+            ph[i]->hash = 0;
+            ph[i]->value.len = 0;
+        }
+
+        ph[0]->value = *value;
+
+        if (value->len == 0) {
+            ph[0]->hash = 0;
+
+        } else {
+            ph[0]->hash = hv->hash;
+        }
+
+        return NGX_OK;
+    }
+
+    ph = ngx_array_push(pa);
+    if (ph == NULL) {
+        return NGX_ERROR;
+    }
+
+    ho = ngx_list_push(&r->headers_out.headers);
+    if (ho == NULL) {
+        return NGX_ERROR;
+    }
+
+    ho->value = *value;
+
+    if (value->len == 0) {
+        ho->hash = 0;
+
+    } else {
+        ho->hash = hv->hash;
+    }
+
+    ho->key = hv->key;
+    *ph = ho;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    if (value->len == 0) {
+        return ngx_http_clear_last_modified_header(r, hv, value);
+    }
+
+    r->headers_out.last_modified_time = ngx_http_parse_time(value->data,
+                                                            value->len);
+
+    return ngx_http_set_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_clear_last_modified_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    r->headers_out.last_modified_time = -1;
+
+    return ngx_http_clear_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_clear_builtin_header(ngx_http_request_t *r,
+    ngx_http_shib_request_header_val_t *hv, ngx_str_t *value)
+{
+    value->len = 0;
+
+    return ngx_http_set_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_set_output_header(ngx_http_request_t *r, ngx_str_t key,
+    ngx_str_t value)
+{
+    ngx_http_shib_request_header_val_t         hv;
+    ngx_http_shib_request_set_header_t        *handlers = ngx_http_shib_request_set_handlers;
+    ngx_uint_t                        i;
+
+    hv.hash = ngx_hash_key_lc(key.data, key.len);
+    hv.key = key;
+
+    hv.offset = 0;
+    hv.handler = NULL;
+
+    for (i = 0; handlers[i].name.len; i++) {
+        if (hv.key.len != handlers[i].name.len
+            || ngx_strncasecmp(hv.key.data, handlers[i].name.data,
+                               handlers[i].name.len) != 0)
+        {
+            continue;
+        }
+
+        hv.offset = handlers[i].offset;
+        hv.handler = handlers[i].handler;
+
+        break;
+    }
+
+    if (handlers[i].name.len == 0 && handlers[i].handler) {
+        hv.offset = handlers[i].offset;
+        hv.handler = handlers[i].handler;
+    }
+
+    /* if there is no handler, skip the header (eg Content-* headers) */
+    if (hv.handler == NULL) {
+        return NGX_OK;
+    }
+
+    return hv.handler(r, &hv, &value);
 }
