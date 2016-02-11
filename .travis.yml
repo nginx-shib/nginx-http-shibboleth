@@ -1,0 +1,23 @@
+language: c
+compiler:
+  - clang
+  - gcc
+env:
+  - NGINX=1.9.11
+  - NGINX=1.8.1
+sudo: false
+addons:
+  apt:
+    packages:
+      - libpcre3-dev
+      - libssl-dev
+cache: ccache
+script: |
+  wget -O - http://nginx.org/download/nginx-${NGINX}.tar.gz | tar -xzf -
+  cd nginx-${NGINX}
+  git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.29
+  ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
+  make
+  mkdir logs # Requried for nginx to start
+  ./objs/nginx -c $(pwd)/../nginx-test.conf -p . -t
+
