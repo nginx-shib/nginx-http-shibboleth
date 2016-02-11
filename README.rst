@@ -120,7 +120,7 @@ Gotchas
   This means that built-in directives like ``add_header`` will **not** work if configured
   as part of the a ``/shibauthorizer`` block.  If you need to manipulate subrequest headers,
   use ``more_set_headers`` from the module ``headers-more``.
-  
+
   See http://forum.nginx.org/read.php?29,257271,257272#msg-257272.
 
 * Subrequest response bodies cannot be returned to the client as Nginx does not currently
@@ -128,19 +128,43 @@ Gotchas
   be returned to the client) for FastCGI.  As a result, the response body from the
   Shibboleth authorizer is simply ignored.  Typically, this is worked around by having 
   Nginx serve an suitable page instead; for instance::
-  
+
       location /secure {
          shib_request /shibauthorizer;
          error_page 403 /shibboleth-forbidden.html;
          ...
       }
-      
+
   would serve the given page if the Shibboleth authorizer denies the user access
   to this location.  Without ``error_page`` specified, Nginx will serve its generic
   error pages.
-  
+
   Note that this does *not* apply to the Shibboleth responder (typically hosted at
   ``Shibboleth.sso``) as it is a FastCGI responder and Nginx is fully compatible
   with this as no subrequests are used.
-  
+
   See http://forum.nginx.org/read.php?2,238444,238453.
+
+Tests
+-----
+
+Tests are automatically run on Travis CI whenever new commits are made to the
+repository or when new pull requests are opened.  If something breaks, you'll
+be informed by Travis and the results will be reported on GitHub.
+
+Tests are written using a combination of a simple Bash script in `.travis.yml`
+for compilation of different versions of Nginx with our module, and also the
+`Test::Nginx <https://metacpan.org/pod/Test::Nginx::Socket>`_ Perl test
+scaffolding for integration testing with this module.  Consult the previous
+link for information on how to extend the tests, and also refer to the
+underlying `Test::Base
+<https://metacpan.org/pod/Test::Base#blocks-data-section-name>`_ documentation
+on aspects like the `blocks()` function.
+
+Integration tests are run automatically with Travis CI but
+also be run manually (requires Perl & CPAN to be installed)::
+
+    cd nginx-shibboleth-auth
+    cpan -fi Test::Nginx::Socket
+    # nginx must be present in path and built with debugging symbols
+    prove

@@ -5,12 +5,10 @@ compiler:
 env:
   - NGINX=1.9.11
   - NGINX=1.8.1
-sudo: false
-addons:
-  apt:
-    packages:
-      - libpcre3-dev
-      - libssl-dev
+before_install:
+  - sudo apt-get install -qq libpcre3-dev libssl-dev
+  - sudo apt-get install -qq perl
+  - sudo env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
 cache: ccache
 script: |
   wget -O - http://nginx.org/download/nginx-${NGINX}.tar.gz | tar -xzf -
@@ -18,6 +16,7 @@ script: |
   git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.29
   ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
   make
-  mkdir logs # Requried for nginx to start
-  ./objs/nginx -c $(pwd)/../nginx-test.conf -p . -t
+  cd ..
 
+  export PATH=$(pwd)/nginx-${NGINX}/objs/:$PATH
+  prove
