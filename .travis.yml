@@ -14,8 +14,6 @@ addons:
     - libssl-dev
     - perl
 before_install:
-  - perlbrew install perl-5.18.2
-  - perlbrew switch perl-5.18.2
   - perl -v
   - env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
 install:
