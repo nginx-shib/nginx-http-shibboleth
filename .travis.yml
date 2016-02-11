@@ -18,6 +18,6 @@ script: |
   make
   cd ..
 
-  export PATH=$(pwd)/nginx-${NGINX}/objs/:$PATH
-  eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+  export PATH=$(pwd)/nginx-${NGINX}/objs:$PATH
+  export PERL5LIB=$HOME/perl5/lib/perl5
   prove
