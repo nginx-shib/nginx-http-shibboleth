@@ -7,7 +7,8 @@ env:
   - NGINX=1.8.1
 before_install:
   - sudo apt-get install -qq libpcre3-dev libssl-dev
-  - sudo apt-get install -y perl
+  - sudo apt-get install -qq perl
+  - perl -v
   - env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
 cache: ccache
 script: |
