@@ -1,6 +1,9 @@
 Shibboleth auth request module for nginx
 ========================================
 
+.. image:: https://travis-ci.org/nginx-shib/nginx-http-shibboleth.svg?branch=master
+   :target: https://travis-ci.org/nginx-shib/nginx-http-shibboleth
+
 This module allows authorization based on the result of a subrequest to
 Shibboleth.  Once a subrequest returns 2xx status - access is allowed; on 401
 or 403 - access is disabled with an appropriate status.
