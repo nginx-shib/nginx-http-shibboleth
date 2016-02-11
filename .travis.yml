@@ -1,23 +1,37 @@
 language: c
-compiler:
+compilers:
   - clang
   - gcc
 env:
-  - NGINX=1.9.11
-  - NGINX=1.8.1
+  - SHIB_NGINX_VERSION=1.9.11
+  - SHIB_NGINX_VERSION=1.8.1
+sudo: false
+addons:
+  apt:
+    packages:
+    - libpcre3-dev
+    - libssl-dev
+    - perl
+    - cpanminus
+cache:
+  apt: true
+  cpan: true
+  ccache: true
+  directories:
+    - $HOME/perl5
 before_install:
-  - sudo apt-get install -qq libpcre3-dev libssl-dev
-  - sudo apt-get install -qq perl
-  - env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
-cache: ccache
-script: |
-  wget -O - http://nginx.org/download/nginx-${NGINX}.tar.gz | tar -xzf -
-  cd nginx-${NGINX}
-  git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.29
-  ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
-  make
-  cd ..
-
-  export PATH=$(pwd)/nginx-${NGINX}/objs/:$PATH
-  eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
-  prove
+    - cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+install:
+  - wget -O - http://nginx.org/download/nginx-${SHIB_NGINX_VERSION}.tar.gz | tar -xzf -
+  - cd nginx-${SHIB_NGINX_VERSION}
+  - git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.29
+  - ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
+  - make
+  - export PATH=$(pwd)/objs:$PATH
+  - cd ..
+script:
+  - PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
+after_failure:
+  - cat t/servroot/conf/nginx.conf
+  - cat t/servroot/access.log
+  - cat t/servroot/error.log

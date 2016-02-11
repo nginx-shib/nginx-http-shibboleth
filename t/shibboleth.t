@@ -11,9 +11,6 @@ repeat_each(1);
 plan tests => repeat_each() * (44);
 
 
-our $http_config = <<'_EOC_';
-_EOC_
-
 our $config = <<'_EOC_';
         # 401 must be returned with WWW-Authenticate header
         location /test1 {
@@ -132,14 +129,13 @@ _EOC_
 
 worker_connections(128);
 no_shuffle();
-run_tests();
-
 no_diff();
+ok(1 eq 1, "Dummy test, no Nginx");
+run_tests();
 
 __DATA__
 
 === TEST 1: Testing 401 response
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test1
@@ -151,7 +147,6 @@ WWW-Authenticate: noauth-block
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 2: Testing 401 response with main request header
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test2
@@ -164,7 +159,6 @@ WWW-Authenticate: noauth-block
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 3: Testing 403 response with main request header
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test3
@@ -176,7 +170,6 @@ X-Must-Not-Be-Present:
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 4: Testing 403 response with main request header
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test4
@@ -188,7 +181,6 @@ X-From-Request: true
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 5: Testing redirection with in-built header addition
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test5
@@ -201,7 +193,6 @@ X-Main-Request-Add-Header: Foobar
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 6: Testing redirection with subrequest header manipulation in main request
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test6
@@ -215,7 +206,6 @@ X-From-Subrequest: true
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 7: Testing successful auth, no leaked variables
---- http_config eval: $::http_config
 --- config eval: $::config
 --- user_files
 >>> test7
@@ -235,7 +225,6 @@ qr/shib request.*/
 qr/copied header/
 
 === TEST 8: Testing successful auth, no leaked variables, main request headers set
---- http_config eval: $::http_config
 --- config eval: $::config
 --- user_files
 >>> test8
@@ -256,14 +245,12 @@ qr/shib request.*/
 qr/shib request authorizer copied header:/
 
 === TEST 9: Testing no auth with correct headers; subrequest header changes are ignored
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test9
 --- error_code: 403
 --- response_headers
 Content-Encoding:
-Content-Length: 169
 Content-Type: text/html
 Content-Range:
 --- timeout: 10
@@ -271,7 +258,6 @@ Content-Range:
 qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 10: Testing no auth with overwritten headers; subrequest header changes are ignored
---- http_config eval: $::http_config
 --- config eval: $::config
 --- request
 GET /test10
