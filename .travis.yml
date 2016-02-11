@@ -8,7 +8,7 @@ env:
 before_install:
   - sudo apt-get install -qq libpcre3-dev libssl-dev
   - sudo apt-get install -qq perl
-  - sudo env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
+  - env PERL_MM_USE_DEFAULT=1 cpan -fi Test::Nginx::Socket
 cache: ccache
 script: |
   wget -O - http://nginx.org/download/nginx-${NGINX}.tar.gz | tar -xzf -
@@ -19,4 +19,5 @@ script: |
   cd ..
 
   export PATH=$(pwd)/nginx-${NGINX}/objs/:$PATH
+  eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
   prove
