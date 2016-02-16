@@ -3,6 +3,7 @@ compilers:
   - clang
   - gcc
 env:
+  # Don't use `NGINX` as the variable name or Nginx won't daemonise
   - SHIB_NGINX_VERSION=1.9.11
   - SHIB_NGINX_VERSION=1.8.1
 sudo: false
