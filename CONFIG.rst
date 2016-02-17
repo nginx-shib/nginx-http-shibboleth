@@ -91,7 +91,7 @@ shortly configure Nginx with them.
 
 
 Compile Nginx with Shibboleth module
---------------------------------------
+------------------------------------
 
 Compile Nginx with the ``nginx-http-shibboleth`` custom third-party module,
 following instructions at http://wiki.nginx.org/3rdPartyModules.  How you do

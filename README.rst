@@ -4,21 +4,25 @@ Shibboleth auth request module for nginx
 .. image:: https://travis-ci.org/nginx-shib/nginx-http-shibboleth.svg?branch=master
    :target: https://travis-ci.org/nginx-shib/nginx-http-shibboleth
 
-This module allows authorization based on the result of a subrequest to
-Shibboleth.  Once a subrequest returns 2xx status - access is allowed; on 401
-or 403 - access is disabled with an appropriate status.
+This module allows Nginx to work with Shibboleth, by way of Shibboleth's
+FastCGI authorizer.  This module requires specific configuration in order to
+work correctly, as well as Shibboleth's FastCGI authorizer application
+available on the system.
 
-For 40x statuses, the WWW-Authenticate header from the subrequest response
-will be passed to client.  All other subrequest response statuses (such as 3xx
-redirects) are passed back to the client, including status and headers.  This
-mostly conforms to the FastCGI Authorizer specification, with the exception of
-the processing of the sub-request and sub-response bodies due to limitations
-in Nginx. As the Shibboleth FastCGI authorizer does not consider the contents
-of a request body or use response bodies, this is not an issue.
+With this module configured against a ``location`` block, incoming requests
+are authorized within Nginx based upon the result of a subrequest to
+Shibboleth's FastCGI authorizer.  In this process, this module will copy user
+attributes from a successful authorizer response into Nginx's original request
+as headers for use by any backend application.  If authorization is not
+successful, the authorizer response status and headers are returned to the
+client, denying access or redirecting the user's browser accordingly (such as
+to a WAYF page, if so configured).  Read more about the `Behaviour`_ below.
 
-The module works at access phase and therefore may be combined nicely with
-other access modules (access, auth_basic) via satisfy directive.
-
+This module works at access phase and therefore may be combined with other
+access modules (such as ``access``, ``auth_basic``) via the ``satisfy``
+directive.  This module can be also compiled alongside
+``ngx_http_auth_request_module``, though use of both of these modules in the
+same ``location`` block is untested and not advised.
 
 Configuration directives
 ------------------------
@@ -114,7 +118,7 @@ Note that we use the `headers-more-nginx-module <https://github.com/openresty/he
 to clear potentially dangerous input headers.
 
 Gotchas
--------
+~~~~~~~
 
 * Subrequests, such as the Shibboleth auth request, aren't processed through header filters.
   This means that built-in directives like ``add_header`` will **not** work if configured
@@ -123,11 +127,50 @@ Gotchas
 
   See http://forum.nginx.org/read.php?29,257271,257272#msg-257272.
 
-* Subrequest response bodies cannot be returned to the client as Nginx does not currently
-  support NGX_HTTP_SUBREQUEST_IN_MEMORY (whereby it would be buffered in memory and could
-  be returned to the client) for FastCGI.  As a result, the response body from the
-  Shibboleth authorizer is simply ignored.  Typically, this is worked around by having 
-  Nginx serve an suitable page instead; for instance::
+Behaviour
+---------
+
+This module follows the `FastCGI Authorizer spec`_ where possible, but has
+some notable deviations - with good reason.  The behaviour is thus:
+
+* An authorizer subrequest is comprised of all aspects of the original
+  request, excepting the request body as Nginx does not support buffering of
+  request bodies.  As the Shibboleth FastCGI authorizer does not consider the
+  request body, this is not an issue.
+
+* If an authorizer subrequest returns a ``200`` status, access is
+  allowed and response headers beginning with ``Variable-\*`` are extracted,
+  stripping the ``Variable-`` substring from the header name, and copied into
+  the main request. For example, an authorizer response header such as
+  ``Variable-CN: John Smith`` would result in ``CN: John Smith`` being added
+  to the main request, and thus sent onto any backend configured.
+
+  As per the spec, however, other authorizer response headers not prefixed
+  with ``Variable-`` and the response body are ignored.
+
+  The spec calls for ``Variable-*`` name-value pairs to be included in the
+  FastCGI environment, but we make them headers so as they may be used with
+  *any* backend (such as `proxy_pass`) and not just restrict ourselves to
+  FastCGI applications.  By passing the `Variable-*` data as headers instead,
+  we end up following the behaviour of `mod_shib` for Apache, which passes
+  these user attributes as headers.
+
+* If the authorizer subrequest returns *any* other status (including redirects
+  or errors), the authorizer response's status and headers are returned to the
+  client.
+
+  This means that on ``401 Unauthorized`` or ``403 Forbidden``, access will be
+  denied and headers (such as ``WWW-Authenticate``) from the authorizer will be
+  passed to client.  All other authorizer responses (such as ``3xx``
+  redirects) are passed back to the client, including status and headers,
+  allowing redirections such as those to WAYF pages and the Shibboleth
+  responder (``Shibboleth.sso``) to work correctly.
+
+  The FastCGI Authorizer spec calls for the response body to be returned to
+  the client, but as Nginx does not currently support buffering subrequest
+  responses (``NGX_HTTP_SUBREQUEST_IN_MEMORY``), the authorizer response body
+  is effectively ignored.  A workaround is to have Nginx serve an
+  ``error_page`` of its own, like so::
 
       location /secure {
          shib_request /shibauthorizer;
@@ -135,15 +178,19 @@ Gotchas
          ...
       }
 
-  would serve the given page if the Shibboleth authorizer denies the user access
-  to this location.  Without ``error_page`` specified, Nginx will serve its generic
-  error pages.
+  This serves the given error page if the Shibboleth authorizer denies the
+  user access to this location.  Without ``error_page`` specified, Nginx will
+  serve its generic error pages.
 
   Note that this does *not* apply to the Shibboleth responder (typically hosted at
   ``Shibboleth.sso``) as it is a FastCGI responder and Nginx is fully compatible
   with this as no subrequests are used.
 
-  See http://forum.nginx.org/read.php?2,238444,238453.
+  For more details, see http://forum.nginx.org/read.php?2,238444,238453.
+
+Whilst this module is geared specifically for Shibboleth's FastCGI authorizer,
+it will likely work with other authorizers, bearing in mind the deviations
+from the spec above.
 
 Tests
 -----
@@ -168,3 +215,6 @@ also be run manually (requires Perl & CPAN to be installed)::
     cpan -fi Test::Nginx::Socket
     # nginx must be present in path and built with debugging symbols
     prove
+
+
+.. _FastCGI Authorizer spec: http://www.fastcgi.com/drupal/node/6?q=node/22#S6.3
