@@ -25,8 +25,11 @@ directive.  This module can be also compiled alongside
 ``ngx_http_auth_request_module``, though use of both of these modules in the
 same ``location`` block is untested and not advised.
 
-Configuration directives
-------------------------
+Directives
+----------
+
+The following directives are added into your Nginx configuration files. The
+contexts mentioned below show where they may be added.
 
 .. warning::
 
@@ -34,41 +37,45 @@ Configuration directives
    flag.  This must be removed for Nginx to start. No other changes are
    required.
 
-::
+shib_request <uri>|off
+   | **Context:** ``http``, ``server``, ``location``
+   | **Default:** ``off``
 
-    shib_request <uri>|off
+   Switches the Shibboleth auth request module on and sets URI which will be 
+   asked for authorization.  The configured URI should refer to a Nginx
+   location block that points to your Shibboleth FastCGI authorizer.
 
-        Context: http, server, location
-        Default: off
+   The HTTP status and headers of the response resulting
+   from the sub-request to the configured URI will be returned to the user,
+   in accordance with the `FastCGI Authorizer
+   specification <http://www.fastcgi.com/drupal/node/22#S6.3>`_.
+   The one (potentially significant) caveat is that due to the way
+   Nginx operates at present with regards to subrequests (what
+   an Authorizer effectively requires), the request body will *not* be
+   forwarded to the authorizer, and similarly, the response body from
+   the authorizer will *not* be returned to the client. 
 
-        Switches the Shibboleth auth request module on and sets uri which will be 
-        asked for authorization.  The configured uri should refer to a Nginx
-        location block that points to your Shibboleth FastCGI authorizer.
+   Configured URIs are not restricted to using a FastCGI backend
+   to generate a response, however.  This may be useful during
+   testing or otherwise, as you can use Nginx's built in ``return``
+   and ``rewrite`` directives to produce a suitable response.
+   Additionally, this module may be used with *any* FastCGI
+   authorizer, although operation may be affected by the above caveat.
 
-        The HTTP status and headers of the response resulting
-        from the sub-request to the configured uri will be returned to the user,
-        in accordance with the FastCGI Authorizer
-        specification; see http://www.fastcgi.com/drupal/node/22#S6.3.
-        The one (potentially significant) caveat is that due to the way
-        Nginx operates at present with regards to subrequests (what
-        an Authorizer effectively requires), the request body will *not* be
-        forwarded to the authorizer, and similarly, the response body from
-        the authorizer will *not* be returned to the client. 
+shib_request_set <variable> <value>
+   | **Context:** ``http``, ``server``, ``location``
+   | **Default:** ``none``
 
-        Configured URIs are not restricted to using a FastCGI backend
-        to generate a response, however.  This may be useful during
-        testing or otherwise, as you can use Nginx's built in ``return``
-        and ``rewrite`` directives to produce a suitable response.
-        Additionally, this module may be used with *any* FastCGI
-        authorizer, although operation may be affected by the above caveat.
+   Set the ``variable`` to the specified ``value`` after the auth request has
+   completed. The ``value`` may contain variables from the auth request's
+   response.  For instance, ``$upstream_http_*``, ``$upstream_status``, and
+   any other variables mentioned in the `nginx_http_upstream_module
+   <http://nginx.org/en/docs/http/ngx_http_upstream_module.html#variables>`_
+   documentation.
 
-    shib_request_set <variable> <value>
-
-        Context: http, server, location
-        Default: none
-
-        Set request variable to the given value after auth request completion.
-        Value may contain variables from auth request, e.g. $upstream_http_*.
+   This directive can be used to introduce Shibboleth attributes into the
+   environment of the backend application.  See the `Configuration`_
+   documentation for an example.
 
 
 Installation
@@ -91,7 +98,7 @@ For full details about configuring the Nginx/Shibboleth environment,
 see the documentation at
 https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
 
-A simple example consists of the following::
+An example consists of the following::
 
     # FastCGI authorizer for Shibboleth Auth Request module
     location = /shibauthorizer {
@@ -115,9 +122,28 @@ A simple example consists of the following::
         proxy_pass http://localhost:8080;
     }
 
-Note that we use the `headers-more-nginx-module <https://github.com/openresty/headers-more-nginx-module>`_
-to clear potentially dangerous input headers and avoid the potential for
-spoofing.
+    # Using the ``shib_request_set`` directive, we can introduce attributes as
+    # environment variables for the backend application. In this example, we
+    # set ``fastcgi_param`` but this could be any type of Nginx backend that
+    # supports parameters (by using the appropriate *_param option)
+    location /secure-environment-vars {
+        shib_request /shibauthorizer;
+        shib_request_set $shib_commonname $upstream_http_variable_commonname;
+        shib_request_set $shib_email $upstream_http_variable_email;
+        fastcgi_param COMMONNAME $shib_commonname;
+        fastcgi_param EMAIL $shib_email;
+
+        include fastcgi_params;
+        fastcgi_pass unix:
+    }
+
+
+Note that we use the `headers-more-nginx-module
+<https://github.com/openresty/headers-more-nginx-module>`_ to clear
+potentially dangerous input headers and avoid the potential for spoofing.  The
+latter example with environment variables isn't susceptible to header
+spoofing, as long as the backend application ensures it only reads data from
+the environment parameters.
 
 Gotchas
 ~~~~~~~
