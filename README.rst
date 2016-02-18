@@ -132,9 +132,7 @@ An example consists of the following::
         shib_request_set $shib_email $upstream_http_variable_email;
         fastcgi_param COMMONNAME $shib_commonname;
         fastcgi_param EMAIL $shib_email;
-
-        include fastcgi_params;
-        fastcgi_pass unix:
+        fastcgi_pass unix:/path/to/backend.socket;
     }
 
 
