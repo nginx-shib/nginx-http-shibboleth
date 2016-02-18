@@ -244,7 +244,7 @@ Integration tests are run automatically with Travis CI but
 also be run manually (requires Perl & CPAN to be installed)::
 
     cd nginx-shibboleth-auth
-    cpan -fi Test::Nginx::Socket
+    cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
     # nginx must be present in path and built with debugging symbols
     prove
 
