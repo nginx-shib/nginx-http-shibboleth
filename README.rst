@@ -248,5 +248,11 @@ also be run manually (requires Perl & CPAN to be installed)::
     # nginx must be present in path and built with debugging symbols
     prove
 
+Versioning
+----------
+
+This module uses `Semantic Versioning <http://semver.org/>`_ and all releases
+are tagged on GitHub, which allows package downloads of individual tags.
 
 .. _FastCGI Authorizer spec: http://www.fastcgi.com/drupal/node/6?q=node/22#S6.3
+
