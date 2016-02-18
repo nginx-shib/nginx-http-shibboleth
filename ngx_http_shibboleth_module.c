@@ -1,20 +1,16 @@
 
 /*
-
- Original ngx_http_auth_request module:
- * Copyright (C) Maxim Dounin
- * Copyright (C) Nginx, Inc.
-
- Forked Shibboleth dedicated module:
- * Copyright (C) 2013-2016, David Beitey (davidjb)
- * Copyright (C) 2014, Luca Bruno
-
- Contains elements adapted from ngx_lua:
- * Copyright (C) 2009-2015, by Xiaozhe Wang (chaoslawful) chaoslawful@gmail.com.
- * Copyright (C) 2009-2015, by Yichun "agentzh" Zhang (章亦春) agentzh@gmail.com, CloudFlare Inc.
-
- Distributed under 2-clause BSD license, see LICENSE file.
-
+ * Original ngx_http_auth_request module:
+ *   Copyright (C) Maxim Dounin
+ *   Copyright (C) Nginx, Inc.
+ * Forked Shibboleth dedicated module:
+ *   Copyright (C) 2013-2016, David Beitey (davidjb)
+ *   Copyright (C) 2014, Luca Bruno
+ * Contains elements adapted from ngx_lua:
+ *   Copyright (C) 2009-2015, by Xiaozhe Wang (chaoslawful) chaoslawful@gmail.com.
+ *   Copyright (C) 2009-2015, by Yichun "agentzh" Zhang (章亦春) agentzh@gmail.com, CloudFlare Inc.
+ *
+ *  Distributed under 2-clause BSD license, see LICENSE file.
  */
 
 
