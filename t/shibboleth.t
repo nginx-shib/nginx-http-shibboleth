@@ -8,7 +8,7 @@ repeat_each(1);
 
 # Each `TEST` in __DATA__ below generates a block for each pattern match
 # count
-plan tests => repeat_each() * (44);
+plan tests => repeat_each() * (50);
 
 
 our $config = <<'_EOC_';
@@ -56,13 +56,15 @@ our $config = <<'_EOC_';
         # Variable-* headers **must not** be present.
         location /test7 {
             shib_request /auth;
+            shib_request_use_headers on;
         }
 
-        # 404 must be returned; a 200 here is incorrect
+        # 200 for successful auth is required
         # X-From-Main-Request header **must** be returned.
         location /test8 {
             more_set_headers 'X-From-Main-Request: true';
             shib_request /auth;
+            shib_request_use_headers on;
         }
 
         # 403 must be returned with correct Content-Encoding, Content-Length,
@@ -74,6 +76,15 @@ our $config = <<'_EOC_';
         # 403 must be returned with overwritten Server and Date headers
         location /test10 {
             shib_request /noauth-builtin-headers;
+        }
+
+        # 200 for successful auth is required
+        # X-From-Main-Request header **must** be returned.
+        # Headers MUST NOT be copied to the backend
+        location /test11 {
+            more_set_headers 'X-From-Main-Request: true';
+            shib_request /auth;
+            shib_request_use_headers off;
         }
 
         ####################
@@ -122,7 +133,7 @@ our $config = <<'_EOC_';
         location /auth {
             internal;
             more_set_headers "Variable-Email: david@example.org";
-            more_set_headers "Variable-Cn: davidjb";
+            more_set_headers "Variable-Commonname: davidjb";
             return 200 'Authenticated';
         }
 _EOC_
@@ -215,7 +226,7 @@ GET /test7
 --- error_code: 200
 --- response_headers
 Variable-Email:
-Variable-Cn:
+Variable-Commonname:
 --- timeout: 10
 --- no_error_log eval
 qr/\[(warn|error|crit|alert|emerg)\]/
@@ -234,7 +245,7 @@ GET /test8
 --- error_code: 200
 --- response_headers
 Variable-Email:
-Variable-Cn:
+Variable-Commonname:
 X-From-Main-Request: true
 --- timeout: 10
 --- no_error_log eval
@@ -269,3 +280,23 @@ Location: https://sp.example.org
 --- timeout: 10
 --- no_error_log eval
 qr/\[(warn|error|crit|alert|emerg)\]/
+
+=== TEST 11: Testing successful auth, no leaked variables, no headers set
+--- config eval: $::config
+--- user_files
+>>> test11
+Hello, world
+--- request
+GET /test11
+--- error_code: 200
+--- response_headers
+Variable-Email:
+Variable-Commonname:
+X-From-Main-Request: true
+--- timeout: 10
+--- no_error_log eval
+qr/\[(warn|error|crit|alert|emerg)\]/
+--- grep_error_log eval
+qr/shib request.*/
+--- grep_error_log_out eval
+qr/shib request authorizer not using headers/

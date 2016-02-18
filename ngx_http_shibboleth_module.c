@@ -44,6 +44,7 @@ struct ngx_http_shib_request_header_val_s {
 typedef struct {
     ngx_str_t                 uri;
     ngx_array_t              *vars;
+    ngx_flag_t                use_headers;
 } ngx_http_auth_request_conf_t;
 
 
@@ -180,6 +181,13 @@ static ngx_command_t  ngx_http_auth_request_commands[] = {
       0,
       NULL },
 
+    { ngx_string("shib_request_use_headers"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_auth_request_conf_t, use_headers),
+      NULL },
+
       ngx_null_command
 };
 
@@ -255,65 +263,72 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
         /*
          * Handle the subrequest
          * as per the FastCGI authorizer specification.
-         */ 
+         */
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "shib request authorizer handler");
         sr = ctx->subrequest;
 
         if (ctx->status == NGX_HTTP_OK) {
-            /* 
-             * 200 response may include headers prefixed with `Variable-`
-             * back into initial headers
-             */
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "shib request authorizer allows access");
 
-            part = &sr->headers_out.headers.part;
-            h = part->elts;
+            if (arcf->use_headers) {
+                /*
+                 * 200 response may include headers prefixed with `Variable-`,
+                 * copy these into main request headers
+                 */
+                part = &sr->headers_out.headers.part;
+                h = part->elts;
 
-            for (i = 0; /* void */; i++) {
+                for (i = 0; /* void */; i++) {
 
-                if (i >= part->nelts) {
-                    if (part->next == NULL) {
-                        break;
+                    if (i >= part->nelts) {
+                        if (part->next == NULL) {
+                            break;
+                        }
+
+                        part = part->next;
+                        h = part->elts;
+                        i = 0;
                     }
 
-                    part = part->next;
-                    h = part->elts;
-                    i = 0;
-                }
-
-                if (h[i].hash == 0) {
-                    continue;
-                }
-
-                if (ngx_strncasecmp(h[i].key.data,
-                    (u_char *) "Variable-", 9) == 0) {
-                    /* copy header into original request */
-                    hi = ngx_list_push(&r->headers_in.headers);
-
-                    if (hi == NULL) {
-                        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                    if (h[i].hash == 0) {
+                        continue;
                     }
 
-                    /* Strip the Variable- prefix */
-                    hi->key.len = h[i].key.len - 9;
-                    hi->key.data = h[i].key.data + 9;
-                    hi->hash = ngx_hash_key(hi->key.data, hi->key.len);
-                    hi->value = h[i].value;
+                    if (ngx_strncasecmp(h[i].key.data,
+                                (u_char *) "Variable-", 9) == 0) {
+                        /* copy header into original request */
+                        hi = ngx_list_push(&r->headers_in.headers);
 
-                    hi->lowcase_key = ngx_pnalloc(r->pool, hi->key.len);
-                    if (hi->lowcase_key == NULL) {
-                        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        if (hi == NULL) {
+                            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        }
+
+                        /* Strip the Variable- prefix */
+                        hi->key.len = h[i].key.len - 9;
+                        hi->key.data = h[i].key.data + 9;
+                        hi->hash = ngx_hash_key(hi->key.data, hi->key.len);
+                        hi->value = h[i].value;
+
+                        hi->lowcase_key = ngx_pnalloc(r->pool, hi->key.len);
+                        if (hi->lowcase_key == NULL) {
+                            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        }
+                        ngx_strlow(hi->lowcase_key, hi->key.data, hi->key.len);
+
+                        ngx_log_debug2(
+                                NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                "shib request authorizer copied header: \"%V: %V\"",
+                                &hi->key, &hi->value);
                     }
-                    ngx_strlow(hi->lowcase_key, hi->key.data, hi->key.len);
-
-                    ngx_log_debug2(
-                      NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                      "shib request authorizer copied header: \"%V: %V\"",
-                      &hi->key, &hi->value);
                 }
+
+            } else {
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                        "shib request authorizer not using headers");
             }
+
 
             return NGX_OK;
         }
@@ -509,6 +524,7 @@ ngx_http_auth_request_create_conf(ngx_conf_t *cf)
      */
 
     conf->vars = NGX_CONF_UNSET_PTR;
+    conf->use_headers = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -522,6 +538,7 @@ ngx_http_auth_request_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_str_value(conf->uri, prev->uri, "");
     ngx_conf_merge_ptr_value(conf->vars, prev->vars, NULL);
+    ngx_conf_merge_value(conf->use_headers, prev->use_headers, 0);
 
     return NGX_CONF_OK;
 }

@@ -11,13 +11,12 @@ available on the system.
 
 With this module configured against a ``location`` block, incoming requests
 are authorized within Nginx based upon the result of a subrequest to
-Shibboleth's FastCGI authorizer.  In this process, this module will copy user
-attributes from a successful authorizer response into Nginx's original request
-as headers for use by any backend application.  If authorization is not
-successful, the authorizer response status and headers are returned to the
-client, denying access or redirecting the user's browser accordingly (such as
-to a WAYF page, if so configured).  Read more about the `Behaviour`_ below and
-consult `Configuration`_ for important notes on avoiding spoofing.
+Shibboleth's FastCGI authorizer.  In this process, this module can be used to
+copy user attributes from a successful authorizer response into Nginx's
+original request as headers or environment parameters for use by any backend
+application.  If authorization is not successful, the authorizer response
+status and headers are returned to the client, denying access or redirecting
+the user's browser accordingly (such as to a WAYF page, if so configured).
 
 This module works at access phase and therefore may be combined with other
 access modules (such as ``access``, ``auth_basic``) via the ``satisfy``
@@ -25,17 +24,15 @@ directive.  This module can be also compiled alongside
 ``ngx_http_auth_request_module``, though use of both of these modules in the
 same ``location`` block is untested and not advised.
 
+Read more about the `Behaviour`_ below and consult `Configuration`_ for
+important notes on avoiding spoofing if using headers for attributes.
+
 Directives
 ----------
 
 The following directives are added into your Nginx configuration files. The
 contexts mentioned below show where they may be added.
 
-.. warning::
-
-   The ``shib_request`` directive no longer requires the ``shib_authorizer``
-   flag.  This must be removed for Nginx to start. No other changes are
-   required.
 
 shib_request <uri>|off
    | **Context:** ``http``, ``server``, ``location``
@@ -62,6 +59,12 @@ shib_request <uri>|off
    Additionally, this module may be used with *any* FastCGI
    authorizer, although operation may be affected by the above caveat.
 
+   .. warning::
+
+      The ``shib_request`` directive no longer requires the ``shib_authorizer``
+      flag.  This must be removed for Nginx to start. No other changes are
+      required.
+
 shib_request_set <variable> <value>
    | **Context:** ``http``, ``server``, ``location``
    | **Default:** ``none``
@@ -76,6 +79,29 @@ shib_request_set <variable> <value>
    This directive can be used to introduce Shibboleth attributes into the
    environment of the backend application.  See the `Configuration`_
    documentation for an example.
+
+shib_request_use_headers on|off
+   | **Context:** ``http``, ``server``, ``location``
+   | **Default:** ``off``
+
+   .. note::
+
+      Added in v2.0.0.
+
+   Copy attributes from the Shibboleth authorizer response into the main
+   request as headers, making them available to upstream servers and
+   applications.
+
+   With this setting enabled, Authorizer response headers beginning with
+   ``Variable-\*`` are extracted, stripping the ``Variable-`` substring from
+   the header name, and copied into the main request before it is sent to the
+   backend. For example, an authorizer response header such as
+   ``Variable-Commonname: John Smith`` would result in ``Commonname: John
+   Smith`` being added to the main request, and thus sent to the backend.
+
+   **Beware of spoofing** - you must ensure that your backend application is
+   protected from injection of headers. Consult the `Configuration`_ example
+   on how to achieve this.
 
 
 Installation
@@ -140,8 +166,8 @@ Note that we use the `headers-more-nginx-module
 <https://github.com/openresty/headers-more-nginx-module>`_ to clear
 potentially dangerous input headers and avoid the potential for spoofing.  The
 latter example with environment variables isn't susceptible to header
-spoofing, as long as the backend application ensures it only reads data from
-the environment parameters.
+spoofing, as long as the backend reads data from the environment parameters
+only.
 
 Gotchas
 ~~~~~~~
@@ -164,26 +190,25 @@ some notable deviations - with good reason.  The behaviour is thus:
   request bodies.  As the Shibboleth FastCGI authorizer does not consider the
   request body, this is not an issue.
 
-* If an authorizer subrequest returns a ``200`` status, access is
-  allowed and response headers beginning with ``Variable-\*`` are extracted,
-  stripping the ``Variable-`` substring from the header name, and copied into
-  the main request. For example, an authorizer response header such as
-  ``Variable-CN: John Smith`` would result in ``CN: John Smith`` being added
-  to the main request, and thus sent onto any backend configured.
+* If an authorizer subrequest returns a ``200`` status, access is allowed.
 
-  As per the spec, however, other authorizer response headers not prefixed
-  with ``Variable-`` and the response body are ignored.
+  If ``shib_request_use_headers`` is enabled, and response headers beginning
+  with ``Variable-\*`` are extracted, stripping the ``Variable-`` substring
+  from the header name, and copied into the main request.  Other authorizer
+  response headers not prefixed with ``Variable-`` and the response body are
+  ignored.  The FastCGI spec calls for ``Variable-*`` name-value pairs to be
+  included in the FastCGI environment, but we make them headers so as they may
+  be used with *any* backend (such as ``proxy_pass``) and not just restrict
+  ourselves to FastCGI applications.  By passing the ``Variable-*`` data as
+  headers instead, we end up following the behaviour of ``ShibUseHeaders On``
+  in ``mod_shib`` for Apache, which passes these user attributes as headers.
 
-  The spec calls for ``Variable-*`` name-value pairs to be included in the
-  FastCGI environment, but we make them headers so as they may be used with
-  *any* backend (such as ``proxy_pass``) and not just restrict ourselves to
-  FastCGI applications.  By passing the ``Variable-*`` data as headers instead,
-  we end up following the behaviour of ``ShibUseHeaders On`` in ``mod_shib`` for
-  Apache, which passes these user attributes as headers.
-
-  Note that the passing of attributes as environment variables (the equivalent
-  to ``ShibUseEnvironment On`` in ``mod_shib``) is not currently supported;
-  pull requests are welcome to add this behaviour.
+  In order to pass attributes as environment variables (the equivalent to
+  ``ShibUseEnvironment On`` in ``mod_shib``), attributes must be manually
+  extracted using ``shib_request_set`` directives for each attribute.  This
+  cannot (currently) be done *en masse* for all attributes as each backend may
+  accept parameters in a different way (``fastcgi_param``, ``uwsgi_param``
+  etc).  Pull requests are welcome to automate this behaviour.
 
 * If the authorizer subrequest returns *any* other status (including redirects
   or errors), the authorizer response's status and headers are returned to the
