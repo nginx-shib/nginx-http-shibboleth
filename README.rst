@@ -16,7 +16,8 @@ attributes from a successful authorizer response into Nginx's original request
 as headers for use by any backend application.  If authorization is not
 successful, the authorizer response status and headers are returned to the
 client, denying access or redirecting the user's browser accordingly (such as
-to a WAYF page, if so configured).  Read more about the `Behaviour`_ below.
+to a WAYF page, if so configured).  Read more about the `Behaviour`_ below and
+consult `Configuration`_ for important notes on avoiding spoofing.
 
 This module works at access phase and therefore may be combined with other
 access modules (such as ``access``, ``auth_basic``) via the ``satisfy``
@@ -100,7 +101,7 @@ A simple example consists of the following::
     }
 
     # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
-    # Watch out for performance issues and spoofing.
+    # Watch out for performance issues and spoofing!
     location /secure {
         more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
 
@@ -115,7 +116,8 @@ A simple example consists of the following::
     }
 
 Note that we use the `headers-more-nginx-module <https://github.com/openresty/headers-more-nginx-module>`_
-to clear potentially dangerous input headers.
+to clear potentially dangerous input headers and avoid the potential for
+spoofing.
 
 Gotchas
 ~~~~~~~
@@ -150,10 +152,14 @@ some notable deviations - with good reason.  The behaviour is thus:
 
   The spec calls for ``Variable-*`` name-value pairs to be included in the
   FastCGI environment, but we make them headers so as they may be used with
-  *any* backend (such as `proxy_pass`) and not just restrict ourselves to
-  FastCGI applications.  By passing the `Variable-*` data as headers instead,
-  we end up following the behaviour of `mod_shib` for Apache, which passes
-  these user attributes as headers.
+  *any* backend (such as ``proxy_pass``) and not just restrict ourselves to
+  FastCGI applications.  By passing the ``Variable-*`` data as headers instead,
+  we end up following the behaviour of ``ShibUseHeaders On`` in ``mod_shib`` for
+  Apache, which passes these user attributes as headers.
+
+  Note that the passing of attributes as environment variables (the equivalent
+  to ``ShibUseEnvironment On`` in ``mod_shib``) is not currently supported;
+  pull requests are welcome to add this behaviour.
 
 * If the authorizer subrequest returns *any* other status (including redirects
   or errors), the authorizer response's status and headers are returned to the
