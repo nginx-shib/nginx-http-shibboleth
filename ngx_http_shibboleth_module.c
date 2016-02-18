@@ -6,7 +6,7 @@
  * Copyright (C) Nginx, Inc.
 
  Forked Shibboleth dedicated module:
- * Copyright (C) 2013-2015, David Beitey (davidjb)
+ * Copyright (C) 2013-2016, David Beitey (davidjb)
  * Copyright (C) 2014, Luca Bruno
 
  Contains elements adapted from ngx_lua:
@@ -318,7 +318,7 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
                       &hi->key, &hi->value);
                 }
             }
-            
+
             return NGX_OK;
         }
 
