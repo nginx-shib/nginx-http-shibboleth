@@ -163,13 +163,14 @@ variables are passed around as headers.
             #by the FastCGI authorizer so we must prevent spoofing.
             more_clear_input_headers 'displayName' 'mail' 'persistent-id';
             shib_request /shibauthorizer;
-            proxy_pass http://localhost:8080; 
+            shib_request_use_headers on;
+            proxy_pass http://localhost:8080;
         }
 
         #A secured location, but only a specific sub-path causes Shibboleth
         #authentication.
         location /secure2 {
-            proxy_pass http://localhost:8080; 
+            proxy_pass http://localhost:8080;
 
             location = /secure2/shibboleth {
                 more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
@@ -177,6 +178,7 @@ variables are passed around as headers.
                 #by the FastCGI authorizer so we must prevent spoofing.
                 more_clear_input_headers 'displayName' 'mail' 'persistent-id';
                 shib_request /shibauthorizer;
+                shib_request_use_headers on;
                 proxy_pass http://localhost:8080;
             }
         }
