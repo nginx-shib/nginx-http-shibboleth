@@ -10,10 +10,10 @@ sudo: false
 addons:
   apt:
     packages:
-    - libpcre3-dev
-    - libssl-dev
-    - perl
-    - cpanminus
+      - libpcre3-dev
+      - libssl-dev
+      - perl
+      - cpanminus
 cache:
   apt: true
   cpan: true
@@ -21,7 +21,7 @@ cache:
   directories:
     - $HOME/perl5
 before_install:
-    - cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+  - cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
 install:
   - wget -O - http://nginx.org/download/nginx-${SHIB_NGINX_VERSION}.tar.gz | tar -xzf -
   - cd nginx-${SHIB_NGINX_VERSION}
