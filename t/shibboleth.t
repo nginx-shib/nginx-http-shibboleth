@@ -7,9 +7,18 @@ use Test::Nginx::Socket;
 repeat_each(1);
 
 # Each `TEST` in __DATA__ below generates a block for each pattern match
-# count
+# count. Increase the magic number accordingly if adding new tests or
+# expanding checks in existing tests (this will add more blocks).
 plan tests => repeat_each() * (50);
 
+# Populate config for the dynamic module, if requested
+our $main_config = '';
+my $SHIB_DYNAMIC_MODULE = $ENV{'SHIB_DYNAMIC_MODULE'};
+if ($SHIB_DYNAMIC_MODULE && $SHIB_DYNAMIC_MODULE eq 'true') {
+    my $SHIB_MODULE_PATH = $ENV{'SHIB_MODULE_PATH'} ? $ENV{'SHIB_MODULE_PATH'} : 'modules';
+    $main_config = "load_module $SHIB_MODULE_PATH/ngx_http_headers_more_filter_module.so;
+                    load_module $SHIB_MODULE_PATH/ngx_http_shibboleth_module.so;";
+}
 
 our $config = <<'_EOC_';
         # 401 must be returned with WWW-Authenticate header
@@ -148,6 +157,7 @@ __DATA__
 
 === TEST 1: Testing 401 response
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test1
 --- error_code: 401
@@ -159,6 +169,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 2: Testing 401 response with main request header
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test2
 --- error_code: 401
@@ -171,6 +182,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 3: Testing 403 response with main request header
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test3
 --- error_code: 403
@@ -182,6 +194,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 4: Testing 403 response with main request header
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test4
 --- error_code: 403
@@ -193,6 +206,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 5: Testing redirection with in-built header addition
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test5
 --- error_code: 301
@@ -205,6 +219,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 6: Testing redirection with subrequest header manipulation in main request
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test6
 --- error_code: 301
@@ -218,6 +233,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 7: Testing successful auth, no leaked variables
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- user_files
 >>> test7
 Hello, world
@@ -237,6 +253,7 @@ qr/copied header/
 
 === TEST 8: Testing successful auth, no leaked variables, main request headers set
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- user_files
 >>> test8
 Hello, world
@@ -257,6 +274,7 @@ qr/shib request authorizer copied header:/
 
 === TEST 9: Testing no auth with correct headers; subrequest header changes are ignored
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test9
 --- error_code: 403
@@ -270,6 +288,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 10: Testing no auth with overwritten headers; subrequest header changes are ignored
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- request
 GET /test10
 --- error_code: 403
@@ -283,6 +302,7 @@ qr/\[(warn|error|crit|alert|emerg)\]/
 
 === TEST 11: Testing successful auth, no leaked variables, no headers set
 --- config eval: $::config
+--- main_config eval: $::main_config
 --- user_files
 >>> test11
 Hello, world

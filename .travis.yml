@@ -4,8 +4,10 @@ compilers:
   - gcc
 env:
   # Don't use `NGINX` as the variable name or Nginx won't daemonise
-  - SHIB_NGINX_VERSION=1.9.13
-  - SHIB_NGINX_VERSION=1.8.1
+  - SHIB_NGINX_VERSION=1.9.13 SHIB_DYNAMIC_MODULE=true
+  - SHIB_NGINX_VERSION=1.9.13 SHIB_DYNAMIC_MODULE=false
+  - SHIB_NGINX_VERSION=1.8.1 SHIB_DYNAMIC_MODULE=true
+  - SHIB_NGINX_VERSION=1.8.1 SHIB_DYNAMIC_MODULE=false
 sudo: false
 addons:
   apt:
@@ -25,10 +27,16 @@ before_install:
 install:
   - wget -O - http://nginx.org/download/nginx-${SHIB_NGINX_VERSION}.tar.gz | tar -xzf -
   - cd nginx-${SHIB_NGINX_VERSION}
-  - git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.29
-  - ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
+  - git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.30rc1
+  - |
+    if [ "$SHIB_DYNAMIC_MODULE" = true ]; then
+      ./configure --with-debug --add-dynamic-module=.. --add-dynamic-module=./headers-more-nginx-module
+    else
+      ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
+    fi
   - make
   - export PATH=$(pwd)/objs:$PATH
+  - export SHIB_MODULE_PATH=$(pwd)/objs
   - cd ..
 script:
   - PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v

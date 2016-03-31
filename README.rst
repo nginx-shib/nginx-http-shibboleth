@@ -1,4 +1,4 @@
-Shibboleth auth request module for nginx
+Shibboleth auth request module for Nginx
 ========================================
 
 .. image:: https://travis-ci.org/nginx-shib/nginx-http-shibboleth.svg?branch=master
@@ -26,6 +26,9 @@ same ``location`` block is untested and not advised.
 
 Read more about the `Behaviour`_ below and consult `Configuration`_ for
 important notes on avoiding spoofing if using headers for attributes.
+
+For further information on why this is a dedicated module, see
+http://forum.nginx.org/read.php?2,238523,238523#msg-238523
 
 Directives
 ----------
@@ -107,14 +110,32 @@ shib_request_use_headers on|off
 Installation
 ------------
 
-To compile nginx with this module, use the::
+This module can either be compiled statically or dynamically, since the
+introduction of `dynamic modules
+<https://www.nginx.com/resources/wiki/extending/converting/>`_ in Nginx
+1.9.11.  The practical upshot of dynamic modules is that they can be loaded,
+as opposed to static modules which are permanently present and enabled.
 
-    --add-module <path>
 
-option when you ``configure`` nginx.
+To compile Nginx with this module dynamically, pass the following option to
+``./configure`` when building Nginx::
 
-For further information on why this is a dedicated module, see
-http://forum.nginx.org/read.php?2,238523,238523#msg-238523
+    --add-dynamic-module=<path>
+
+You will need to explicitly load the module in your ``nginx.conf`` by
+including::
+
+    load_module /path/to/modules/ngx_http_shibboleth_module.so;
+
+and reloading Nginx.
+
+To compile Nginx with this module statically, pass the following option to
+``./configure`` when building Nginx::
+
+    --add-module=<path>
+
+No additional loading is required as the module is built-in with this
+configuration.
 
 
 Configuration
@@ -266,10 +287,10 @@ on aspects like the `blocks()` function.
 Integration tests are run automatically with Travis CI but
 also be run manually (requires Perl & CPAN to be installed)::
 
-    cd nginx-shibboleth-auth
+    cd nginx-http-shibboleth
     cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
-    # nginx must be present in path and built with debugging symbols
-    prove
+    # nginx must be present in PATH and built with debugging symbols
+    PERL5LIB=$HOME/perl5/lib/perl5 prove
 
 Versioning
 ----------
