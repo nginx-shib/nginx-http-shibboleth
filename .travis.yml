@@ -4,8 +4,8 @@ compilers:
   - gcc
 env:
   # Don't use `NGINX` as the variable name or Nginx won't daemonise
-  - SHIB_NGINX_VERSION=1.9.13 SHIB_DYNAMIC_MODULE=true
-  - SHIB_NGINX_VERSION=1.9.13 SHIB_DYNAMIC_MODULE=false
+  - SHIB_NGINX_VERSION=1.10.0 SHIB_DYNAMIC_MODULE=true
+  - SHIB_NGINX_VERSION=1.10.0 SHIB_DYNAMIC_MODULE=false
   - SHIB_NGINX_VERSION=1.8.1 SHIB_DYNAMIC_MODULE=false
 sudo: false
 addons:
