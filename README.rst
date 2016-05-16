@@ -158,13 +158,19 @@ An example consists of the following::
     # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
     # Watch out for performance issues and spoofing!
     location /secure {
-        more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
+        shib_request /shibauthorizer;
+        shib_request_use_headers on;
 
-        # Add your attributes here. They get introduced as headers
-        # by the FastCGI authorizer so we must prevent spoofing.
+        # Attributes from Shibboleth are introduced as headers by the FastCGI
+        # authorizer so we must prevent spoofing. The
+        # ``shib_clear_headers`` is a set of default header directives,
+        # available in the `includes/` directory in this repository.
+        include shib_clear_headers;
+
+        # Add *all* attributes that your application uses, including all
+        #variations.
         more_clear_input_headers 'displayName' 'mail' 'persistent-id';
 
-        shib_request /shibauthorizer;
         # Backend application that will receive Shibboleth variables as request
         # headers from the FastCGI authorizer
         proxy_pass http://localhost:8080;
@@ -176,7 +182,7 @@ An example consists of the following::
     # supports parameters (by using the appropriate *_param option)
     #
     # The ``shib_fastcgi_params`` is an optional set of default parameters,
-    # available in this repository.
+    # available in the `includes/` directory in this repository.
     location /secure-environment-vars {
         shib_request /shibauthorizer;
         include shib_fastcgi_params;
@@ -192,10 +198,17 @@ Note that we use the `headers-more-nginx-module
 potentially dangerous input headers and avoid the potential for spoofing.  The
 latter example with environment variables isn't susceptible to header
 spoofing, as long as the backend reads data from the environment parameters
-**only**.  Bear in mind that some applications will try to read a
+**only**.
+
+A `default configuration
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/config/shib_clear_headers>`_
+is available to clear the basic headers from the Shibboleth authorizer, but
+you must ensure you write your own clear directives for all attributes your
+application uses.  Bear in mind that some applications will try to read a
 Shibboleth attribute from the environment and then fall back to headers, so
 review your application's code even if you are not using
 ``shib_request_use_headers``.
+
 
 With use of ``shib_request_set``, a `default params
 <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/config/shib_fastcgi_params>`_

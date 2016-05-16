@@ -157,8 +157,7 @@ variables are passed around as headers.
        #A secured location.  Here all incoming requests query the
        #FastCGI authorizer.  Watch out for performance issues and spoofing.
        location /secure {
-            more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
-
+            include shib_clear_headers;
             #Add your attributes here. They get introduced as headers
             #by the FastCGI authorizer so we must prevent spoofing.
             more_clear_input_headers 'displayName' 'mail' 'persistent-id';
@@ -173,7 +172,7 @@ variables are passed around as headers.
             proxy_pass http://localhost:8080;
 
             location = /secure2/shibboleth {
-                more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-Type' 'AUTH_TYPE';
+                include shib_clear_headers;
                 #Add your attributes here. They get introduced as headers
                 #by the FastCGI authorizer so we must prevent spoofing.
                 more_clear_input_headers 'displayName' 'mail' 'persistent-id';
