@@ -80,8 +80,9 @@ shib_request_set <variable> <value>
    documentation.
 
    This directive can be used to introduce Shibboleth attributes into the
-   environment of the backend application.  See the `Configuration`_
-   documentation for an example.
+   environment of the backend application, such as `$_SERVER` for a FastCGI
+   PHP application and is the recommended method of doing so.  See the
+   `Configuration`_ documentation for an example.
 
 shib_request_use_headers on|off
    | **Context:** ``http``, ``server``, ``location``
@@ -134,8 +135,8 @@ To compile Nginx with this module statically, pass the following option to
 
     --add-module=<path>
 
-No additional loading is required as the module is built-in with this
-configuration.
+With a static build, no additional loading is required as the module is
+built-in to Nginx.
 
 
 Configuration
@@ -173,8 +174,12 @@ An example consists of the following::
     # environment variables for the backend application. In this example, we
     # set ``fastcgi_param`` but this could be any type of Nginx backend that
     # supports parameters (by using the appropriate *_param option)
+    #
+    # The ``shib_fastcgi_params`` is an optional set of default parameters,
+    # available in this repository.
     location /secure-environment-vars {
         shib_request /shibauthorizer;
+        include shib_fastcgi_params;
         shib_request_set $shib_commonname $upstream_http_variable_commonname;
         shib_request_set $shib_email $upstream_http_variable_email;
         fastcgi_param COMMONNAME $shib_commonname;
@@ -182,13 +187,25 @@ An example consists of the following::
         fastcgi_pass unix:/path/to/backend.socket;
     }
 
-
 Note that we use the `headers-more-nginx-module
 <https://github.com/openresty/headers-more-nginx-module>`_ to clear
 potentially dangerous input headers and avoid the potential for spoofing.  The
 latter example with environment variables isn't susceptible to header
 spoofing, as long as the backend reads data from the environment parameters
-only.
+**only**.  Bear in mind that some applications will try to read a
+Shibboleth attribute from the environment and then fall back to headers, so
+review your application's code even if you are not using
+``shib_request_use_headers``.
+
+With use of ``shib_request_set``, a `default params
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/config/shib_fastcgi_params>`_
+file is available which you can use as an nginx ``include`` to ensure all core
+Shibboleth variables get passed from the FastCGI authorizer to the
+application. Numerous default attributes are included so remove the ones that
+aren't required by your application and add Federation or IDP attributes that
+you need. This default params file can be re-used for upstreams that aren't
+FastCGI by simply changing the ``fastcgi_param`` directives to
+``uwsgi_param``, ``scgi_param`` or so forth.
 
 Gotchas
 ~~~~~~~

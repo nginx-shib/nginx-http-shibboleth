@@ -1,0 +1,73 @@
+# vim: set filetype=conf :
+
+# Replace `fastcgi_param` with `sgci_param`, `uwsgi_param` or similar
+# directive for use with different upstreams. Consult the relevant upstream
+# documentation for more information on environment parameters.
+
+shib_request_set $shib_auth_type $upstream_http_variable_auth_type;
+fastcgi_param Auth-Type $shib_auth_type;
+
+shib_request_set $shib_shib_application_id $upstream_http_variable_shib_application_id;
+fastcgi_param Shib-Application-Id $shib_shib_application_id;
+
+shib_request_set $shib_shib_authentication_instant $upstream_http_variable_shib_authentication_instant;
+fastcgi_param Shib-Authentication-Instant $shib_shib_authentication_instant;
+
+shib_request_set $shib_shib_authentication_method $upstream_http_variable_shib_authentication_method;
+fastcgi_param Shib-Authentication-Method $shib_shib_authentication_method;
+
+shib_request_set $shib_shib_authncontext_class $upstream_http_variable_shib_authncontext_class;
+fastcgi_param Shib-Authncontext-Class $shib_shib_authncontext_class;
+
+shib_request_set $shib_shib_identity_provider $upstream_http_variable_shib_identity_provider;
+fastcgi_param Shib-Identity-Provider $shib_shib_identity_provider;
+
+shib_request_set $shib_shib_session_id $upstream_http_variable_shib_session_id;
+fastcgi_param Shib-Session-Id $shib_shib_session_id;
+
+shib_request_set $shib_shib_session_index $upstream_http_variable_shib_session_index;
+fastcgi_param Shib-Session-Index $shib_shib_session_index;
+
+shib_request_set $shib_remote_user $upstream_http_variable_remote_user;
+fastcgi_param Remote-User $shib_remote_user;
+
+
+# Uncomment any of the following core attributes. Consult your Shibboleth
+# Service Provider (SP) attribute-map.xml file for details about attribute
+# IDs.  Add additional directives for any Shibboleth attributes released to
+# your SP.
+
+# shib_request_set $shib_eppn $upstream_http_variable_eppn;
+# fastcgi_param EPPN $shib_eppn;
+#
+# shib_request_set $shib_affliation $upstream_http_variable_affiliation;
+# fastcgi_param Affiliation $shib_affiliation;
+#
+# shib_request_set $shib_unscoped_affliation $upstream_http_variable_unscoped_affiliation;
+# fastcgi_param Unscoped-Affiliation $shib_unscoped_affiliation;
+#
+# shib_request_set $shib_entitlement $upstream_http_variable_entitlement;
+# fastcgi_param Entitlement $shib_entitlement;
+
+
+# shib_request_set $shib_targeted_id $upstream_http_variable_targeted_id;
+# fastcgi_param Targeted-Id $shib_targeted_id;
+#
+# shib_request_set $shib_persistent_id $upstream_http_variable_persistent_id;
+# fastcgi_param Persistent-Id $shib_persistent_id;
+#
+# shib_request_set $shib_transient_name $upstream_http_variable_transient_name;
+# fastcgi_param Transient-Name $shib_transient_name;
+
+
+# shib_request_set $shib_commonname $upstream_http_variable_commonname;
+# fastcgi_param Commonname $shib_commonname;
+#
+# shib_request_set $shib_displayname $upstream_http_variable_displayname;
+# fastcgi_param DisplayName $shib_displayname;
+#
+# shib_request_set $shib_email $upstream_http_variable_email;
+# fastcgi_param Email $shib_email;
+#
+# shib_request_set $shib_organizationname $upstream_http_variable_organizationname;
+# fastcgi_param OrganizationName $shib_organizationname;
