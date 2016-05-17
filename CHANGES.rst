@@ -1,15 +1,16 @@
 CHANGES
 =======
 
-2.0.0 (unreleased)
+2.0.0 (2016-05-18)
 ------------------
 
 * **Backwards incompatibility**: Added ``shib_request_use_headers`` directive
   to require explicit configuration of copying attributes as headers. To
   restore pre-v2.0.0 behaviour add ``shib_request_use_headers on`` to your
   configuration.
-* Add ability and tests for being built as a dynamic module in Nginx 1.9.11+.
+* Module can now be built as a dynamic module in Nginx 1.9.11+.
   Static compilation is always possible (and tested).
+* Added Travis CI tests.
 
 1.0.0 (2016-02-18)
 ------------------
