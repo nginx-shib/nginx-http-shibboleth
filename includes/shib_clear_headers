@@ -1,0 +1,32 @@
+# Ensure that you add directives to clear input headers for *all* attributes
+# that your backend application uses. This may also include variations on these
+# headers, such as differing capitalisations and replacing hyphens with
+# underscores etc -- it all depends on what your application is reading.
+#
+# Note that Nginx silently drops headers with underscores
+# unless the non-default `underscores_in_headers` is enabled.
+
+# Shib-* doesn't currently work because * isn't (yet) supported
+more_clear_input_headers
+    Auth-Type
+    Shib-Application-Id
+    Shib-Authentication-Instant
+    Shib-Authentication-Method
+    Shib-Authncontext-Class
+    Shib-Identity-Provider
+    Shib-Session-Id
+    Shib-Session-Index
+    Remote-User;
+
+# more_clear_input_headers
+#     EPPN
+#     Affiliation
+#     Unscoped-Affiliation
+#     Entitlement
+#     Targeted-Id
+#     Persistent-Id
+#     Transient-Name
+#     Commonname
+#     DisplayName
+#     Email
+#     OrganizationName;
