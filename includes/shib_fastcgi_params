@@ -3,12 +3,17 @@
 # Replace `fastcgi_param` with `sgci_param`, `uwsgi_param` or similar
 # directive for use with different upstreams. Consult the relevant upstream
 # documentation for more information on environment parameters.
+#
+# Auth-Type is configured as authType in
+# https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPContentSettings.
+# Other default SP variables are as per
+# https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPAttributeAccess#NativeSPAttributeAccess-CustomSPVariables
 
 shib_request_set $shib_auth_type $upstream_http_variable_auth_type;
 fastcgi_param Auth-Type $shib_auth_type;
 
 shib_request_set $shib_shib_application_id $upstream_http_variable_shib_application_id;
-fastcgi_param Shib-Application-Id $shib_shib_application_id;
+fastcgi_param Shib-Application-ID $shib_shib_application_id;
 
 shib_request_set $shib_shib_authentication_instant $upstream_http_variable_shib_authentication_instant;
 fastcgi_param Shib-Authentication-Instant $shib_shib_authentication_instant;
@@ -17,13 +22,16 @@ shib_request_set $shib_shib_authentication_method $upstream_http_variable_shib_a
 fastcgi_param Shib-Authentication-Method $shib_shib_authentication_method;
 
 shib_request_set $shib_shib_authncontext_class $upstream_http_variable_shib_authncontext_class;
-fastcgi_param Shib-Authncontext-Class $shib_shib_authncontext_class;
+fastcgi_param Shib-AuthnContext-Class $shib_shib_authncontext_class;
+
+shib_request_set $shib_shib_authncontext_decl $upstream_http_variable_shib_authncontext_decl;
+fastcgi_param Shib-AuthnContext-Decl $shib_shib_authncontext_decl;
 
 shib_request_set $shib_shib_identity_provider $upstream_http_variable_shib_identity_provider;
 fastcgi_param Shib-Identity-Provider $shib_shib_identity_provider;
 
 shib_request_set $shib_shib_session_id $upstream_http_variable_shib_session_id;
-fastcgi_param Shib-Session-Id $shib_shib_session_id;
+fastcgi_param Shib-Session-ID $shib_shib_session_id;
 
 shib_request_set $shib_shib_session_index $upstream_http_variable_shib_session_index;
 fastcgi_param Shib-Session-Index $shib_shib_session_index;

@@ -1,6 +1,12 @@
 CHANGES
 =======
 
+3.0.0 (unreleased)
+------------------
+
+* Add further standard SP variables and correct capitalisation in environment
+  params.
+
 2.0.0 (2016-05-18)
 ------------------
 
