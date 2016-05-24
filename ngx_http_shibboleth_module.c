@@ -296,8 +296,8 @@ ngx_http_auth_request_handler(ngx_http_request_t *r)
                         continue;
                     }
 
-                    if (ngx_strncasecmp(h[i].key.data,
-                                (u_char *) "Variable-", 9) == 0) {
+                    if (h[i].key.len >= 9 &&
+                        ngx_strncasecmp(h[i].key.data, (u_char *) "Variable-", 9) == 0) {
                         /* copy header into original request */
                         hi = ngx_list_push(&r->headers_in.headers);
 
