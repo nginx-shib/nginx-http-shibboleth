@@ -8,8 +8,8 @@ This module allows Nginx to work with Shibboleth, by way of Shibboleth's
 FastCGI authorizer.  This module requires specific configuration in order to
 work correctly, as well as Shibboleth's FastCGI authorizer application
 available on the system.  It aims to be similar to parts of Apache's
-`mod_shib`_, though all Shibboleth request settings are configured via
-`shibboleth2.xml`_ rather than in the web server configuration.
+`mod_shib`_, though Shibboleth authorisation and authentication settings are 
+configured via `shibboleth2.xml`_ rather than in the web server configuration.
 
 With this module configured against a ``location`` block, incoming requests
 are authorized within Nginx based upon the result of a subrequest to
