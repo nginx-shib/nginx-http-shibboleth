@@ -7,7 +7,9 @@ Shibboleth auth request module for Nginx
 This module allows Nginx to work with Shibboleth, by way of Shibboleth's
 FastCGI authorizer.  This module requires specific configuration in order to
 work correctly, as well as Shibboleth's FastCGI authorizer application
-available on the system.
+available on the system.  It aims to be similar to parts of Apache's
+`mod_shib`_, though all Shibboleth request settings are configured via
+`shibboleth2.xml`_ rather than in the web server configuration.
 
 With this module configured against a ``location`` block, incoming requests
 are authorized within Nginx based upon the result of a subrequest to
@@ -329,4 +331,5 @@ This module uses `Semantic Versioning <http://semver.org/>`_ and all releases
 are tagged on GitHub, which allows package downloads of individual tags.
 
 .. _FastCGI Authorizer spec: http://www.fastcgi.com/drupal/node/6?q=node/22#S6.3
-
+.. _mod_shib: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
+.. _shibboleth2.xml: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPShibbolethXML
