@@ -94,7 +94,8 @@ shib_request_use_headers on|off
 
    Copy attributes from the Shibboleth authorizer response into the main
    request as headers, making them available to upstream servers and
-   applications.
+   applications. Use this option only if your upstream/application does not
+   support server parameters via ``shib_request_set``.
 
    With this setting enabled, Authorizer response headers beginning with
    ``Variable-\*`` are extracted, stripping the ``Variable-`` substring from
@@ -155,8 +156,31 @@ An example consists of the following::
         fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
     }
 
+    # Using the ``shib_request_set`` directive, we can introduce attributes as
+    # environment variables for the backend application. In this example, we
+    # set ``fastcgi_param`` but this could be any type of Nginx backend that
+    # supports parameters (by using the appropriate *_param option)
+    #
+    # The ``shib_fastcgi_params`` is an optional set of default parameters,
+    # available in the ``includes/`` directory in this repository.
+    #
+    # Choose this type of configuration unless your backend application
+    # doesn't support server parameters or specifically requires headers.
+    location /secure-environment-vars {
+        shib_request /shibauthorizer;
+        include shib_fastcgi_params;
+        shib_request_set $shib_commonname $upstream_http_variable_commonname;
+        shib_request_set $shib_email $upstream_http_variable_email;
+        fastcgi_param COMMONNAME $shib_commonname;
+        fastcgi_param EMAIL $shib_email;
+        fastcgi_pass unix:/path/to/backend.socket;
+    }
+    
     # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
     # Watch out for performance issues and spoofing!
+    #
+    # Choose this type of configuration for ``proxy_pass`` applications
+    # or backends that don't support server parameters. 
     location /secure {
         shib_request /shibauthorizer;
         shib_request_use_headers on;
@@ -171,26 +195,9 @@ An example consists of the following::
         #variations.
         more_clear_input_headers 'displayName' 'mail' 'persistent-id';
 
-        # Backend application that will receive Shibboleth variables as request
-        # headers from the FastCGI authorizer
+        # This backend application will receive Shibboleth variables as request
+        # headers (from Shibboleth's FastCGI authorizer)
         proxy_pass http://localhost:8080;
-    }
-
-    # Using the ``shib_request_set`` directive, we can introduce attributes as
-    # environment variables for the backend application. In this example, we
-    # set ``fastcgi_param`` but this could be any type of Nginx backend that
-    # supports parameters (by using the appropriate *_param option)
-    #
-    # The ``shib_fastcgi_params`` is an optional set of default parameters,
-    # available in the `includes/` directory in this repository.
-    location /secure-environment-vars {
-        shib_request /shibauthorizer;
-        include shib_fastcgi_params;
-        shib_request_set $shib_commonname $upstream_http_variable_commonname;
-        shib_request_set $shib_email $upstream_http_variable_email;
-        fastcgi_param COMMONNAME $shib_commonname;
-        fastcgi_param EMAIL $shib_email;
-        fastcgi_pass unix:/path/to/backend.socket;
     }
 
 Note that we use the `headers-more-nginx-module
