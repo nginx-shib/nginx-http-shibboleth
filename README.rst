@@ -201,7 +201,7 @@ spoofing, as long as the backend reads data from the environment parameters
 **only**.
 
 A `default configuration
-<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/config/shib_clear_headers>`_
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/includes/shib_clear_headers>`_
 is available to clear the basic headers from the Shibboleth authorizer, but
 you must ensure you write your own clear directives for all attributes your
 application uses.  Bear in mind that some applications will try to read a
@@ -211,7 +211,7 @@ review your application's code even if you are not using
 
 
 With use of ``shib_request_set``, a `default params
-<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/config/shib_fastcgi_params>`_
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/includes/shib_fastcgi_params>`_
 file is available which you can use as an nginx ``include`` to ensure all core
 Shibboleth variables get passed from the FastCGI authorizer to the
 application. Numerous default attributes are included so remove the ones that
