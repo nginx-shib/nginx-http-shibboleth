@@ -1,11 +1,13 @@
 CHANGES
 =======
 
-3.0.0 (unreleased)
+2.0.1 (2017-04-06)
 ------------------
 
 * Add further standard SP variables and correct capitalisation in environment
   params.
+* Update Travis CI version tests.
+* Document preferred configuration of module.
 
 2.0.0 (2016-05-18)
 ------------------
