@@ -149,7 +149,9 @@ For full details about configuring the Nginx/Shibboleth environment,
 see the documentation at
 https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
 
-An example consists of the following::
+An example consists of the following:
+
+.. code-block:: nginx
 
     # FastCGI authorizer for Shibboleth Auth Request module
     location = /shibauthorizer {
@@ -285,7 +287,9 @@ some notable deviations - with good reason.  The behaviour is thus:
   the client, but as Nginx does not currently support buffering subrequest
   responses (``NGX_HTTP_SUBREQUEST_IN_MEMORY``), the authorizer response body
   is effectively ignored.  A workaround is to have Nginx serve an
-  ``error_page`` of its own, like so::
+  ``error_page`` of its own, like so:
+
+  .. code-block:: nginx
 
       location /secure {
          shib_request /shibauthorizer;
@@ -310,9 +314,11 @@ from the spec above.
 Tests
 -----
 
-Tests are automatically run on Travis CI whenever new commits are made to the
-repository or when new pull requests are opened.  If something breaks, you'll
-be informed by Travis and the results will be reported on GitHub.
+Tests are automatically run on Travis CI (using `this configuration
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.travis.yml>`_)
+whenever new commits are made to the repository or when new pull requests
+are opened. If something breaks, you'll be informed by Travis and the results
+will be reported on GitHub.
 
 Tests are written using a combination of a simple Bash script in `.travis.yml`
 for compilation of different versions of Nginx with our module, and also the
@@ -324,7 +330,9 @@ underlying `Test::Base
 on aspects like the `blocks()` function.
 
 Integration tests are run automatically with Travis CI but
-also be run manually (requires Perl & CPAN to be installed)::
+also be run manually (requires Perl & CPAN to be installed):
+
+.. code-block:: bash
 
     cd nginx-http-shibboleth
     cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
