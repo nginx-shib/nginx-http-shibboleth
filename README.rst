@@ -338,6 +338,76 @@ also be run manually (requires Perl & CPAN to be installed):
     cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
     # nginx must be present in PATH and built with debugging symbols
     PERL5LIB=$HOME/perl5/lib/perl5 prove
+    
+Debugging
+---------
+
+Because of the complex nature of the nginx/FastCGI/Shibboleth stack, debugging
+configuration issues can be difficult.  Here's some key points:
+
+#. Confirm that ``nginx-http-shibboleth`` is successfully built and installed
+   within nginx. You can check by running ``nginx -V`` and inspecting the
+   output for ``--add-module=[path]/nginx-http-shibboleth`` or
+   ``--add-dynamic-module=[path]/nginx-http-shibboleth``.
+#. If using dynamic modules for nginx, confirm you have used the
+   ``load_module`` directive to load this module.  Your use of ``shib_request``
+   and other directives will fail if you have forgotten to load the module.
+#. If using a version of nginx that is different to those we 
+   `test with <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.travis.yml>`_
+   or if you are using other third-party modules, you should run
+   the test suite above to confirm compatibility.  If any tests fail, then check
+   your configuration or consider updating your nginx version.
+#. Shibboleth configuration: check your ``shibboleth2.xml`` and associated
+   configuration to ensure your hosts, paths and attributes are being correctly
+   released.  An `example configuration <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst#configuring-shibboleths-shibboleth2xml-to-recognise-secured-paths>`
+   can help you identify key "gotchas" to configuring ``shibboleth2.xml`` to work
+   with the FastCGI authorizer.
+#. Application-level: within your code, always start with the simplest possible
+   debugging output (such as printing the request environment) and work
+   up from there.  If you want to create a basic, stand-alone app, take
+   a look at the `Bottle <https://github.com/nginx-shib/nginx-http-shibboleth/wiki/bottle>`_
+   configuration on the wiki.
+#. Debugging module internals: if you've carefully checked all of the above, then
+   you can also debug the behaviour of this module itself.  You will need to have
+   compiled nginx with debugging support (via ``./auto/configure --with-debug ...``)
+   and when running nginx, it is easiest if you're able run in the foreground with
+   debug logging enabled.  Add the following to your ``nginx.conf``:
+   
+   .. code-block:: nginx
+   
+      daemon off;
+      error_log stderr debug;
+      
+   and run nginx.  Upon starting nginx you should see lines containing `[debug]` and
+   as you make requests, console logging will continue.  If this doesn't happen,
+   then check your nginx configuration and compilation process.
+   
+   When you eventually make a request that hits (or should invoke) the 
+   ``shib_request`` location block, you will see lines like so in the output:
+   
+   .. code-block:: nginx
+   
+      [debug] 1234#0: shib request handler
+      [debug] 1234#0: shib request set variables
+      [debug] 1234#0: shib request authorizer handler
+      [debug] 1234#0: shib request authorizer allows access
+      [debug] 1234#0: shib request authorizer copied header: "AUTH_TYPE: shibboleth"
+      [debug] 1234#0: shib request authorizer copied header: "REMOTE_USER: john.smith@example.com"
+   ...
+   
+   If you don't see these types of lines containing `shib request ...`,
+   or if you see *some* of the lines above but not where headers/variables are being
+   copied, then double-check your nginx configuration.  If you're still not getting
+   anywhere, then you can add your own debugging lines into the source (follow
+   this module's examples) to eventually determine what is going wrong and when.
+   If doing this, don't forget to recompile nginx and/or ``nginx-http-shibboleth``
+   whenever you make a change.
+   
+If you believe you've found a bug in the core module code, then please
+`create an issue <https://github.com/nginx-shib/nginx-http-shibboleth/issues>`_.
+
+You can also search existing issues and questions for help as it is likely someone
+else has come across the same issue.
 
 Versioning
 ----------
