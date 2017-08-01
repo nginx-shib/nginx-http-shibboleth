@@ -120,9 +120,14 @@ introduction of `dynamic modules
 1.9.11.  The practical upshot of dynamic modules is that they can be loaded,
 as opposed to static modules which are permanently present and enabled.
 
+The easiest way to obtain a packaged version of this module is to use the
+`pkg-oss <http://hg.nginx.org/pkg-oss/>`_ tool from Nginx, which provides for
+packaging of dynamic modules for installation alongside the official releases
+of Nginx from the `main repositories <https://nginx.org/en/download.html>`_
+and helps avoid the need to compile Nginx by hand.
 
-To compile Nginx with this module dynamically, pass the following option to
-``./configure`` when building Nginx::
+Otherwise, to compile Nginx with this module dynamically, pass the following
+option to ``./configure`` when building Nginx::
 
     --add-dynamic-module=<path>
 
@@ -131,7 +136,7 @@ including::
 
     load_module /path/to/modules/ngx_http_shibboleth_module.so;
 
-and reloading Nginx.
+and reload or restart Nginx.
 
 To compile Nginx with this module statically, pass the following option to
 ``./configure`` when building Nginx::
