@@ -8,7 +8,7 @@ This module allows Nginx to work with Shibboleth, by way of Shibboleth's
 FastCGI authorizer.  This module requires specific configuration in order to
 work correctly, as well as Shibboleth's FastCGI authorizer application
 available on the system.  It aims to be similar to parts of Apache's
-`mod_shib`_, though Shibboleth authorisation and authentication settings are 
+`mod_shib`_, though Shibboleth authorisation and authentication settings are
 configured via `shibboleth2.xml`_ rather than in the web server configuration.
 
 With this module configured against a ``location`` block, incoming requests
@@ -43,7 +43,7 @@ shib_request <uri>|off
    | **Context:** ``http``, ``server``, ``location``
    | **Default:** ``off``
 
-   Switches the Shibboleth auth request module on and sets URI which will be 
+   Switches the Shibboleth auth request module on and sets URI which will be
    asked for authorization.  The configured URI should refer to a Nginx
    location block that points to your Shibboleth FastCGI authorizer.
 
@@ -55,7 +55,7 @@ shib_request <uri>|off
    Nginx operates at present with regards to subrequests (what
    an Authorizer effectively requires), the request body will *not* be
    forwarded to the authorizer, and similarly, the response body from
-   the authorizer will *not* be returned to the client. 
+   the authorizer will *not* be returned to the client.
 
    Configured URIs are not restricted to using a FastCGI backend
    to generate a response, however.  This may be useful during
@@ -179,12 +179,12 @@ An example consists of the following:
         fastcgi_param EMAIL $shib_email;
         fastcgi_pass unix:/path/to/backend.socket;
     }
-    
+
     # A secured location. All incoming requests query the Shibboleth FastCGI authorizer.
     # Watch out for performance issues and spoofing!
     #
     # Choose this type of configuration for ``proxy_pass`` applications
-    # or backends that don't support server parameters. 
+    # or backends that don't support server parameters.
     location /secure {
         shib_request /shibauthorizer;
         shib_request_use_headers on;
@@ -338,7 +338,7 @@ also be run manually (requires Perl & CPAN to be installed):
     cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
     # nginx must be present in PATH and built with debugging symbols
     PERL5LIB=$HOME/perl5/lib/perl5 prove
-    
+
 Debugging
 ---------
 
@@ -352,7 +352,7 @@ configuration issues can be difficult.  Here's some key points:
 #. If using dynamic modules for nginx, confirm you have used the
    ``load_module`` directive to load this module.  Your use of ``shib_request``
    and other directives will fail if you have forgotten to load the module.
-#. If using a version of nginx that is different to those we 
+#. If using a version of nginx that is different to those we
    `test with <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.travis.yml>`_
    or if you are using other third-party modules, you should run
    the test suite above to confirm compatibility.  If any tests fail, then check
@@ -372,21 +372,21 @@ configuration issues can be difficult.  Here's some key points:
    compiled nginx with debugging support (via ``./auto/configure --with-debug ...``)
    and when running nginx, it is easiest if you're able run in the foreground with
    debug logging enabled.  Add the following to your ``nginx.conf``:
-   
+
    .. code-block:: nginx
-   
+
       daemon off;
       error_log stderr debug;
-      
+
    and run nginx.  Upon starting nginx you should see lines containing `[debug]` and
    as you make requests, console logging will continue.  If this doesn't happen,
    then check your nginx configuration and compilation process.
-   
-   When you eventually make a request that hits (or should invoke) the 
+
+   When you eventually make a request that hits (or should invoke) the
    ``shib_request`` location block, you will see lines like so in the output:
-   
+
    .. code-block:: nginx
-   
+
       [debug] 1234#0: shib request handler
       [debug] 1234#0: shib request set variables
       [debug] 1234#0: shib request authorizer handler
@@ -394,7 +394,7 @@ configuration issues can be difficult.  Here's some key points:
       [debug] 1234#0: shib request authorizer copied header: "AUTH_TYPE: shibboleth"
       [debug] 1234#0: shib request authorizer copied header: "REMOTE_USER: john.smith@example.com"
    ...
-   
+
    If you don't see these types of lines containing `shib request ...`,
    or if you see *some* of the lines above but not where headers/variables are being
    copied, then double-check your nginx configuration.  If you're still not getting
@@ -402,7 +402,7 @@ configuration issues can be difficult.  Here's some key points:
    this module's examples) to eventually determine what is going wrong and when.
    If doing this, don't forget to recompile nginx and/or ``nginx-http-shibboleth``
    whenever you make a change.
-   
+
 If you believe you've found a bug in the core module code, then please
 `create an issue <https://github.com/nginx-shib/nginx-http-shibboleth/issues>`_.
 
