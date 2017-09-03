@@ -233,7 +233,7 @@ Configuring Shibboleth's shibboleth2.xml to recognise secured paths
 -------------------------------------------------------------------
 
 Within Apache, you can tell Shibboleth which paths to secure by
-using configuration like:
+using configuration like so in your web server's configuration:
 
 .. code:: apache
 
@@ -241,12 +241,13 @@ using configuration like:
        ShibRequestSetting authType shibboleth
        ShibRequestSetting requireSession false
    </Location>
-
-Shibboleth is made aware of this configuration automatically.
+  
+With this, Shibboleth is made aware of this configuration automatically.
 
 However, the FastCGI authorizer for Shibboleth operates without such
-directives and thus path protection needs to be configured like it would be
-for IIS, using the ``<RequestMapper>`` configuration.  The same options from
+directives in the web server.  Path protection and request mapping needs to
+be configured like it would be for IIS, using the XML-based
+``<RequestMapper type="XML">`` configuration.  The same options from
 Apache are accepted within the ``RequestMapper`` section of the
 ``shibboleth2.xml`` configuration file, like this truncated example shows.
 This example corresponds to the sample Nginx configuration given above.
@@ -269,6 +270,12 @@ This example corresponds to the sample Nginx configuration given above.
 
 Notes
 ~~~~~
+
+* When used with nginx, the ``RequestMapper`` will work with either
+  ``type="native"`` or ``type="XML"``.  The latter is recommended
+  as nginx has no native commands or ``.htaccess`` so skipping
+  those checks leads to performance gains (see `NativeSPRequestMapper
+  docs <https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapper>`_).
 
 * The Shibboleth FastCGI authorizer must have both ``authType`` **and**
   ``requireSession`` configured for the resultant path.  If they are not
