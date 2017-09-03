@@ -261,9 +261,9 @@ This example corresponds to the sample Nginx configuration given above.
                     redirectToSSL="443">
                 <Path name="/secure" />
                 <Path name="/secure2/shibboleth" />
-                ...
+                <!-- other Path, PathRegex or Query elements here -->
             </Host>
-            ...
+            <!-- other Host or HostRegex elements here -->
         </RequestMap>
     </RequestMapper>
 
@@ -278,8 +278,8 @@ Notes
 * ``<Path>`` names are **case sensitive**.
 
 * You can use other configuration items like ``<HostRegex>`` and
-  ``<PathRegex>`` and ``<AccessControl``> to configure how Shibboleth handles
-  incoming requests.
+  ``<PathRegex>`` and ``<AccessControl>`` to configure how Shibboleth handles
+  incoming requests.  There is no limit on the number of hosts/paths configured.
 
 * Configuration is inherited **downwards** in the XML tree.  So, configure ``authType``
   on a ``<Host>`` element will see it apply to all paths beneath it.  This is
