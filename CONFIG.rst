@@ -89,6 +89,11 @@ Paths will need adjusting for Debian-based distributions, and the socket
 locations are arbitrary.  Make note of these socket locations as you will
 shortly configure Nginx with them.
 
+Note that the above configuration requires Supervisor 3.0 or above.  If you
+are using RHEL/CentOS 6 with EPEL, note that their packaging is only providing
+version Supervisor 2.  If this is the case, you will either need to upgrade OSes,
+install Supervisor from source (or PyPI), or package the RPMs yourself.
+
 
 Compile Nginx with Shibboleth module
 ------------------------------------
