@@ -364,7 +364,7 @@ configuration issues can be difficult.  Here's some key points:
    your configuration or consider updating your nginx version.
 #. Shibboleth configuration: check your ``shibboleth2.xml`` and associated
    configuration to ensure your hosts, paths and attributes are being correctly
-   released.  An `example configuration <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst#configuring-shibboleths-shibboleth2xml-to-recognise-secured-paths>`
+   released.  An `example configuration <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst#configuring-shibboleths-shibboleth2xml-to-recognise-secured-paths>`_
    can help you identify key "gotchas" to configuring ``shibboleth2.xml`` to work
    with the FastCGI authorizer.
 #. Application-level: within your code, always start with the simplest possible
