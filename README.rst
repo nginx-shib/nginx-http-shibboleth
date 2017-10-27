@@ -398,7 +398,7 @@ configuration issues can be difficult.  Here's some key points:
       [debug] 1234#0: shib request authorizer allows access
       [debug] 1234#0: shib request authorizer copied header: "AUTH_TYPE: shibboleth"
       [debug] 1234#0: shib request authorizer copied header: "REMOTE_USER: john.smith@example.com"
-   ...
+      ...
 
    If you don't see these types of lines containing `shib request ...`,
    or if you see *some* of the lines above but not where headers/variables are being
