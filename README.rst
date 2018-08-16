@@ -154,7 +154,7 @@ For full details about configuring the Nginx/Shibboleth environment,
 see the documentation at
 https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
 
-An example `server {}` block consists of the following:
+An example ``server`` block consists of the following:
 
 .. code-block:: nginx
 
