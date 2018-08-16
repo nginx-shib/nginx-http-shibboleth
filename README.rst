@@ -154,15 +154,21 @@ For full details about configuring the Nginx/Shibboleth environment,
 see the documentation at
 https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/CONFIG.rst.
 
-An example consists of the following:
+An example `server {}` block consists of the following:
 
 .. code-block:: nginx
 
-    # FastCGI authorizer for Shibboleth Auth Request module
+    #FastCGI authorizer for Auth Request module
     location = /shibauthorizer {
         internal;
         include fastcgi_params;
         fastcgi_pass unix:/opt/shibboleth/shibauthorizer.sock;
+    }
+
+    #FastCGI responder
+    location /Shibboleth.sso {
+        include fastcgi_params;
+        fastcgi_pass unix:/opt/shibboleth/shibresponder.sock;
     }
 
     # Using the ``shib_request_set`` directive, we can introduce attributes as
