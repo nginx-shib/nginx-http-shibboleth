@@ -426,6 +426,12 @@ Versioning
 This module uses `Semantic Versioning <http://semver.org/>`_ and all releases
 are tagged on GitHub, which allows package downloads of individual tags.
 
+License
+-------
+
+This project is licensed under the same license that nginx is, the
+`2-clause BSD-like license <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/LICENSE>`_. 
+
 .. _FastCGI Authorizer spec: http://www.fastcgi.com/drupal/node/6?q=node/22#S6.3
 .. _mod_shib: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
 .. _shibboleth2.xml: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPShibbolethXML
