@@ -30,7 +30,7 @@ Read more about the `Behaviour`_ below and consult `Configuration`_ for
 important notes on avoiding spoofing if using headers for attributes.
 
 For further information on why this is a dedicated module, see
-http://forum.nginx.org/read.php?2,238523,238523#msg-238523
+https://forum.nginx.org/read.php?2,238523,238523#msg-238523
 
 Directives
 ----------
@@ -49,8 +49,7 @@ shib_request <uri>|off
 
    The HTTP status and headers of the response resulting
    from the sub-request to the configured URI will be returned to the user,
-   in accordance with the `FastCGI Authorizer
-   specification <http://www.fastcgi.com/drupal/node/22#S6.3>`_.
+   in accordance with the `FastCGI Authorizer specification`_.
    The one (potentially significant) caveat is that due to the way
    Nginx operates at present with regards to subrequests (what
    an Authorizer effectively requires), the request body will *not* be
@@ -78,7 +77,7 @@ shib_request_set <variable> <value>
    completed. The ``value`` may contain variables from the auth request's
    response.  For instance, ``$upstream_http_*``, ``$upstream_status``, and
    any other variables mentioned in the `nginx_http_upstream_module
-   <http://nginx.org/en/docs/http/ngx_http_upstream_module.html#variables>`_
+   <https://nginx.org/en/docs/http/ngx_http_upstream_module.html#variables>`_
    documentation.
 
    This directive can be used to introduce Shibboleth attributes into the
@@ -121,7 +120,7 @@ introduction of `dynamic modules
 as opposed to static modules which are permanently present and enabled.
 
 The easiest way to obtain a packaged version of this module is to use the
-`pkg-oss <http://hg.nginx.org/pkg-oss/>`_ tool from Nginx, which provides for
+`pkg-oss <https://hg.nginx.org/pkg-oss/>`_ tool from Nginx, which provides for
 packaging of dynamic modules for installation alongside the official releases
 of Nginx from the `main repositories <https://nginx.org/en/download.html>`_
 and helps avoid the need to compile Nginx by hand.
@@ -250,13 +249,13 @@ Gotchas
   as part of the a ``/shibauthorizer`` block.  If you need to manipulate subrequest headers,
   use ``more_set_headers`` from the module ``headers-more``.
 
-  See http://forum.nginx.org/read.php?29,257271,257272#msg-257272.
+  See https://forum.nginx.org/read.php?29,257271,257272#msg-257272.
 
 Behaviour
 ---------
 
-This module follows the `FastCGI Authorizer spec`_ where possible, but has
-some notable deviations - with good reason.  The behaviour is thus:
+This module follows the `FastCGI Authorizer specification`_ where possible,
+but has some notable deviations - with good reason.  The behaviour is thus:
 
 * An authorizer subrequest is comprised of all aspects of the original
   request, excepting the request body as Nginx does not support buffering of
@@ -316,7 +315,7 @@ some notable deviations - with good reason.  The behaviour is thus:
   ``Shibboleth.sso``) as it is a FastCGI responder and Nginx is fully compatible
   with this as no subrequests are used.
 
-  For more details, see http://forum.nginx.org/read.php?2,238444,238453.
+  For more details, see https://forum.nginx.org/read.php?2,238444,238453.
 
 Whilst this module is geared specifically for Shibboleth's FastCGI authorizer,
 it will likely work with other authorizers, bearing in mind the deviations
@@ -423,9 +422,15 @@ else has come across the same issue.
 Versioning
 ----------
 
-This module uses `Semantic Versioning <http://semver.org/>`_ and all releases
+This module uses `Semantic Versioning <https://semver.org/>`_ and all releases
 are tagged on GitHub, which allows package downloads of individual tags.
 
-.. _FastCGI Authorizer spec: http://www.fastcgi.com/drupal/node/6?q=node/22#S6.3
+License
+-------
+
+This project is licensed under the same license that nginx is, the
+`2-clause BSD-like license <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/LICENSE>`_. 
+
+.. _FastCGI Authorizer specification: https://web.archive.org/web/20160306081510/http://fastcgi.com/drupal/node/6?q=node/22#S6.3
 .. _mod_shib: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
 .. _shibboleth2.xml: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPShibbolethXML
