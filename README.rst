@@ -349,6 +349,13 @@ also be run manually (requires Perl & CPAN to be installed):
     # nginx must be present in PATH and built with debugging symbols
     PERL5LIB=$HOME/perl5/lib/perl5 prove
 
+Help & Support
+--------------
+
+Support requests for Shibboleth configuration and Nginx or web server setup
+should be directed to the Shibboleth community users mailing list.  See
+https://www.shibboleth.net/community/lists/ for details.
+
 Debugging
 ---------
 
@@ -416,8 +423,8 @@ configuration issues can be difficult.  Here's some key points:
 If you believe you've found a bug in the core module code, then please
 `create an issue <https://github.com/nginx-shib/nginx-http-shibboleth/issues>`_.
 
-You can also search existing issues and questions for help as it is likely someone
-else has come across the same issue.
+You can also search existing issues as it is likely someone else has
+encountered a similar issue before.
 
 Versioning
 ----------
