@@ -307,14 +307,38 @@ Notes
 Gotchas
 -------
 
-If you're experiencing issues with the Shibboleth authorizer appearing to fail
-to be invoked, check the following:
+If you're experiencing issues with the Shibboleth authorizer or Shibboleth
+responder appearing to fail to be invoked, check the following:
 
 * The authorizer requires a ``<Path>`` element in ``shib2.xml`` to be
   *correctly* configured with ``authType`` and ``requireSession`` for auth to
   take place.  If you don't (or say forget to restart ``shibd``), then the
   authorizer will return a ``200 OK`` status response, which equates to
   unconditionally allowing access.
+  
+* The authorizer and responder require a correctly-configured FastCGI request
+  environment in order to accept, match and process requests.  The `default
+  fastcgi_params file <https://github.com/nginx/nginx/blob/master/conf/fastcgi_params>`_
+  provides a suitable configuration.  If your ``fastcgi_params`` differs from the
+  default, check this first.
+
+  * If the environment is not correct, the authorizer and responder will respond with
+    ``500 Server Error``, reporting this to the browser::
+    
+        FastCGI Shibboleth responder should only be used for Shibboleth protocol requests.
+        
+    As well as this to the ``stderr`` from FastCGI::
+    
+        shib: doHandler failed to handle the request
+        
+    In this case, check all the FastCGI environment variables to ensure they're right,
+    particularly ``REQUEST_URI`` and ``SERVER_PORT``.
+    
+    Also check your ``shibboleth2.xml`` configuration's ``<Sessions handlerURL="...">``
+    as the FastCGI applications will error in the same way if your ``handlerURL`` and
+    its protocol, port and path don't match what's configured within Nginx.  This is
+    especially true if using an absolute URL, custom port number or different path to
+    the standard `/Shibboleth.sso`.
 
 * No logs will get issued *anywhere* for anything related to the FastCGI
   applications (standard ``shibd`` logging does apply, however).  If you're
@@ -322,7 +346,7 @@ to be invoked, check the following:
   FastCGI authorizer and make sure you see a ``502`` error come back from
   Nginx.  If you still get a ``200``, then your ``shib_request`` configuration
   in Nginx is probably wrong and the authorizer isn't being contacted.
-
+  
 * When in doubt, hard restart the entire stack, and use something like ``curl``
   to ensure you avoid any browser caching.  
   
