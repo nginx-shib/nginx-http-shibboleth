@@ -36,7 +36,7 @@ before_install:
 install:
   - wget -O - http://nginx.org/download/nginx-${SHIB_NGINX_VERSION}.tar.gz | tar -xzf -
   - cd nginx-${SHIB_NGINX_VERSION}
-  - git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.30
+  - git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.33
   - |
     if [ "$SHIB_DYNAMIC_MODULE" = true ]; then
       ./configure --with-debug --add-dynamic-module=.. --add-dynamic-module=./headers-more-nginx-module
