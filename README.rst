@@ -1,8 +1,8 @@
 Shibboleth auth request module for Nginx
 ========================================
 
-.. image:: https://travis-ci.org/nginx-shib/nginx-http-shibboleth.svg?branch=master
-   :target: https://travis-ci.org/nginx-shib/nginx-http-shibboleth
+.. image:: https://github.com/nginx-shib/nginx-http-shibboleth/actions/workflows/build.yml/badge.svg
+   :target: https://github.com/nginx-shib/nginx-http-shibboleth/actions/workflows/build.yml
 
 This module allows Nginx to work with Shibboleth, by way of Shibboleth's
 FastCGI authorizer.  This module requires specific configuration in order to
@@ -324,23 +324,22 @@ from the spec above.
 Tests
 -----
 
-Tests are automatically run on Travis CI (using `this configuration
-<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.travis.yml>`_)
+Tests are automatically run on GitHub Actions (using `this configuration
+<https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.github/workflows/build.yml>`_)
 whenever new commits are made to the repository or when new pull requests
-are opened. If something breaks, you'll be informed by Travis and the results
-will be reported on GitHub.
+are opened. If something breaks, you'll be informed and the results will be
+reported on GitHub.
 
-Tests are written using a combination of a simple Bash script in `.travis.yml`
-for compilation of different versions of Nginx with our module, and also the
+Tests are written using a combination of a simple Bash script for compilation
+of our module with different versions and configurations of Nginx and the
 `Test::Nginx <https://metacpan.org/pod/Test::Nginx::Socket>`_ Perl test
-scaffolding for integration testing with this module.  Consult the previous
-link for information on how to extend the tests, and also refer to the
-underlying `Test::Base
-<https://metacpan.org/pod/Test::Base#blocks-data-section-name>`_ documentation
-on aspects like the `blocks()` function.
+scaffolding for integration testing.  Consult the previous link for
+information on how to extend the tests, and also refer to the underlying
+`Test::Base <https://metacpan.org/pod/Test::Base#blocks-data-section-name>`_
+documentation on aspects like the `blocks()` function.
 
-Integration tests are run automatically with Travis CI but
-also be run manually (requires Perl & CPAN to be installed):
+Integration tests are run automatically by CI but can also be run manually
+(requires Perl & CPAN to be installed):
 
 .. code-block:: bash
 
@@ -370,7 +369,7 @@ configuration issues can be difficult.  Here's some key points:
    ``load_module`` directive to load this module.  Your use of ``shib_request``
    and other directives will fail if you have forgotten to load the module.
 #. If using a version of nginx that is different to those we
-   `test with <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.travis.yml>`_
+   `test with <https://github.com/nginx-shib/nginx-http-shibboleth/blob/master/.github/workflows/build.yml>`_
    or if you are using other third-party modules, you should run
    the test suite above to confirm compatibility.  If any tests fail, then check
    your configuration or consider updating your nginx version.

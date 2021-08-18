@@ -1,0 +1,74 @@
+name: Build CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          # Mainline
+          - nginx: 1.21.1
+            dynamic_module: true
+          - nginx: 1.21.1
+            dynamic_module: false
+          # Stable
+          - nginx: 1.20.1
+            dynamic_module: true
+          - nginx: 1.20.1
+            dynamic_module: false
+          # Past stable versions
+          - nginx: 1.18.0
+            dynamic_module: true
+          - nginx: 1.18.0
+            dynamic_module: false
+          - nginx: 1.16.1
+            dynamic_module: true
+          - nginx: 1.16.1
+            dynamic_module: false
+          - nginx: 1.14.2
+            dynamic_module: false
+          - nginx: 1.12.2
+            dynamic_module: false
+          - nginx: 1.10.3
+            dynamic_module: false
+          - nginx: 1.8.1
+            dynamic_module: false
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install prerequisites
+        run: |
+          sudo apt install -y libpcre3-dev libssl-dev
+          cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+      - name: Build
+        env:
+          _NGINX_VERSION: ${{ matrix.nginx }}
+          SHIB_DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
+        run: |
+            wget -O - "https://nginx.org/download/nginx-$_NGINX_VERSION.tar.gz" | tar -xzf -
+            cd "nginx-$_NGINX_VERSION"
+            git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.33
+            if [ "$_DYNAMIC_MODULE" = true ]; then
+              ./configure --with-debug --add-dynamic-module=.. --add-dynamic-module=./headers-more-nginx-module
+            else
+              ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
+            fi
+            make
+            echo "PATH=$(pwd)/objs:$PATH" >> $GITHUB_ENV
+            echo "SHIB_MODULE_PATH=$(pwd)/objs" >> $GITHUB_ENV
+      - name: Test
+        run: |
+          PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
+      - name: Output debugging info on failure
+        if: ${{ failure() }}
+        run: |
+          cat t/servroot/conf/nginx.conf
+          cat t/servroot/access.log
+          cat t/servroot/error.log

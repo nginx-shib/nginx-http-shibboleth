@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+Unreleased
+----------
+
+* Switch to GitHub Actions for CI.
+
 2.0.1 (2017-04-06)
 ------------------
 
