@@ -34,12 +34,6 @@ jobs:
             dynamic_module: false
           - nginx: 1.14.2
             dynamic_module: false
-          - nginx: 1.12.2
-            dynamic_module: false
-          - nginx: 1.10.3
-            dynamic_module: false
-          - nginx: 1.8.1
-            dynamic_module: false
 
     steps:
       - uses: actions/checkout@v2
