@@ -45,8 +45,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
-          sudo apt install -y libpcre3-dev libssl-dev
-          cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+          sudo apt install -y libpcre3-dev libssl-dev cpanminus
       - name: Build
         env:
           _NGINX_VERSION: ${{ matrix.nginx }}
