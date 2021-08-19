@@ -45,11 +45,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
-          sudo apt install -y libpcre3-dev libssl-dev cpanminus
+          sudo apt install -y libpcre3-dev libssl-dev zlib1g-dev cpanminus
       - name: Build
         env:
           _NGINX_VERSION: ${{ matrix.nginx }}
-          SHIB_DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
+          _DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
         run: |
             wget -O - "https://nginx.org/download/nginx-$_NGINX_VERSION.tar.gz" | tar -xzf -
             cd "nginx-$_NGINX_VERSION"
