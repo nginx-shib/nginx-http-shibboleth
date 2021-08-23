@@ -43,12 +43,12 @@ jobs:
       - name: Build
         env:
           _NGINX_VERSION: ${{ matrix.nginx }}
-          _DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
+          SHIB_DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
         run: |
             wget -O - "https://nginx.org/download/nginx-$_NGINX_VERSION.tar.gz" | tar -xzf -
             cd "nginx-$_NGINX_VERSION"
             git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.33
-            if [ "$_DYNAMIC_MODULE" = true ]; then
+            if [ "$SHIB_DYNAMIC_MODULE" = true ]; then
               ./configure --with-debug --add-dynamic-module=.. --add-dynamic-module=./headers-more-nginx-module
             else
               ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
