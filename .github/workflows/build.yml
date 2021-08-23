@@ -55,9 +55,14 @@ jobs:
               ./configure --with-debug --add-module=.. --add-module=./headers-more-nginx-module
             fi
             make
-            echo "PATH=$(pwd)/objs:$PATH" >> $GITHUB_ENV
-            echo "SHIB_MODULE_PATH=$(pwd)/objs" >> $GITHUB_ENV
+            echo "$(pwd)/objs" >> $GITHUB_PATH
+            if [ "$SHIB_DYNAMIC_MODULE" = true ]; then
+              echo "SHIB_MODULE_PATH=$(pwd)/objs" >> $GITHUB_ENV
+            fi
       - name: Test
+        env:
+          SHIB_DYNAMIC_MODULE: ${{ matrix.dynamic_module }}
+          SHIB_MODULE_PATH: ${{ env.SHIB_MODULE_PATH }}
         run: |
           sudo apt install -y cpanminus
           cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
