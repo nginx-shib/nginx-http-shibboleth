@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           # Mainline
-          - nginx: 1.21.4
+          - nginx: 1.21.5
             dynamic_module: true
-          - nginx: 1.21.4
+          - nginx: 1.21.5
             dynamic_module: false
           # Stable
           - nginx: 1.20.2
