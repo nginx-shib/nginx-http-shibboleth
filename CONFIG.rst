@@ -85,9 +85,16 @@ looks like::
     stdout_logfile=/var/log/supervisor/shibresponder.log
     stderr_logfile=/var/log/supervisor/shibresponder.error.log
 
-Paths will need adjusting for Debian-based distributions, and the socket
-locations are arbitrary.  Make note of these socket locations as you will
-shortly configure Nginx with them.
+Paths, users and permissions may need adjusting for different distributions or
+operating environments.  The socket paths are arbitrary; make note of these
+socket locations as you will use them to configure Nginx.
+
+In the example above, the web server user (e.g. ``nginx``) would need to be
+made part of the ``shibd`` group in order to communicate correctly given the
+socket permissions of ``660``. Permissions and ownership can be changed to suit
+one's own environment, provided the web server can communicate with the FastCGI
+applications sockets and that those applications can correctly access the
+Shibboleth internals (e.g. ``shibd``).
 
 Note that the above configuration requires Supervisor 3.0 or above.  If you
 are using RHEL/CentOS 6 with EPEL, note that their packaging is only providing
