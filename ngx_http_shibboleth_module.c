@@ -763,6 +763,9 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_shib_request_header_v
 
     h->key = hv->key;
     h->value = *value;
+#if defined(nginx_version) && nginx_version >= 1023000
+    h->next = NULL;
+#endif
 
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
