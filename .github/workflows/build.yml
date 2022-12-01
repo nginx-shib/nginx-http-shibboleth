@@ -48,7 +48,7 @@ jobs:
         run: |
             wget -O - "https://nginx.org/download/nginx-$_NGINX_VERSION.tar.gz" | tar -xzf -
             cd "nginx-$_NGINX_VERSION"
-            git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.33
+            git clone https://github.com/openresty/headers-more-nginx-module.git -b v0.34
             if [ "$SHIB_DYNAMIC_MODULE" = true ]; then
               ./configure --with-debug --add-dynamic-module=.. --add-dynamic-module=./headers-more-nginx-module
             else
