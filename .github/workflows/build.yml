@@ -1,10 +1,6 @@
 name: Build CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -14,9 +10,9 @@ jobs:
       matrix:
         include:
           # Mainline
-          - nginx: 1.21.5
+          - nginx: 1.23.2
             dynamic_module: true
-          - nginx: 1.21.5
+          - nginx: 1.22.1
             dynamic_module: false
           # Stable
           - nginx: 1.20.2
