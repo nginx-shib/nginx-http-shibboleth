@@ -4,7 +4,13 @@ CHANGES
 Unreleased
 ----------
 
+2.0.2 (2023-05-26)
+------------------
+
+* bugfix: nginx crash when accessing uninitialized pointer
+* Fix compatibility with nginx 1.23.0+ - change handling of multiple headers
 * Switch to GitHub Actions for CI.
+* Documentation improvements
 
 2.0.1 (2017-04-06)
 ------------------
