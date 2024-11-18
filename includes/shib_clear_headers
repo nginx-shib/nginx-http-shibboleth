@@ -6,16 +6,9 @@
 # Note that Nginx silently drops headers with underscores
 # unless the non-default `underscores_in_headers` is enabled.
 
-# Shib-* doesn't currently work because * isn't (yet) supported
 more_clear_input_headers
     Auth-Type
-    Shib-Application-Id
-    Shib-Authentication-Instant
-    Shib-Authentication-Method
-    Shib-Authncontext-Class
-    Shib-Identity-Provider
-    Shib-Session-Id
-    Shib-Session-Index
+    'Shib-*'
     Remote-User;
 
 # more_clear_input_headers
